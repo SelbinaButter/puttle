@@ -228,7 +228,7 @@ export default function App() {
     if (!puzzle) return
     const shareUrl = ['localhost', '127.0.0.1'].includes(window.location.hostname)
       ? undefined
-      : window.location.origin
+      : new URL(import.meta.env.BASE_URL, window.location.href).href.replace(/\/$/, '')
     const text = shareText(puzzle, strokes, { mode, url: shareUrl })
     if (navigator.share) {
       try {
