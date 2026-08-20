@@ -12,7 +12,9 @@ npm run dev
 
 Useful commands:
 
-- `npm test` — simulation and 60-day generation verification
+- `npm test` — fast simulation and share-card verification
+- `npm run test:generation` — exhaustive 60-day generation verification
+- `npm run test:all` — every unit and generation test
 - `npm run test:browser` — Node/Chromium bitwise determinism harness (requires `npx playwright install chromium` once)
 - `npm run generate -- --date 2026-08-20` — emit one public puzzle and a private metrics artifact
 - `npm run generate -- --from 2026-08-20 --days 7` — generate a date range
