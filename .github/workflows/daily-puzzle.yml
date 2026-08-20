@@ -1,0 +1,54 @@
+name: Publish daily green
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '8 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Restore validated puzzle archive
+        uses: actions/cache@v4
+        with:
+          path: |
+            public/puzzles
+            .generated/solutions
+          key: puzzle-archive-${{ github.run_id }}
+          restore-keys: puzzle-archive-
+      - name: Generate archive through today (UTC)
+        run: npm run generate -- --from 2026-01-01 --through "$(date -u +%F)" --missing
+      - run: npm test
+        env:
+          CI: true
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
