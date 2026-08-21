@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { localDate, previousDate } from '../../src/game/date'
+import { puzzleFingerprint } from '../../src/game/storage'
 import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../../src/sim'
 
 test('an archive deep link opens the specified green', async ({ page }) => {
@@ -109,10 +110,17 @@ test('a saved fifth miss is a finished X/5 round', async ({ page }) => {
     path: [],
   }
   await page.evaluate(
-    ({ roundDate, strokes }) => {
-      localStorage.setItem(`puttle:round:v1:${roundDate}`, JSON.stringify({ date: roundDate, strokes }))
+    ({ roundDate, fingerprint, strokes }) => {
+      localStorage.setItem(
+        `puttle:round:v1:${roundDate}`,
+        JSON.stringify({ date: roundDate, puzzleFingerprint: fingerprint, strokes }),
+      )
     },
-    { roundDate: date, strokes: Array.from({ length: 5 }, () => missedStroke) },
+    {
+      roundDate: date,
+      fingerprint: puzzleFingerprint(puzzle),
+      strokes: Array.from({ length: 5 }, () => missedStroke),
+    },
   )
   await page.reload()
   await expect(page.locator('.result-panel')).toContainText('X/5')
@@ -120,4 +128,40 @@ test('a saved fifth miss is a finished X/5 round', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Putt', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'View result' }).click()
   await expect(page.getByRole('dialog', { name: 'Puzzle result' })).toContainText('Round complete')
+})
+
+test('an untagged round from a regenerated puzzle is discarded', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  await page.getByRole('button', { name: "Play today's green" }).click()
+  const date = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
+  expect(date).toBeDefined()
+
+  await page.evaluate((roundDate) => {
+    localStorage.setItem(`puttle:round:v1:${roundDate}`, JSON.stringify({
+      date: roundDate,
+      strokes: [{
+        aimIndex: 30,
+        speedIndex: 3,
+        start: { x: 1, y: 1 },
+        final: { x: 2, y: 2 },
+        finalDistance: 0,
+        holed: true,
+        lipOut: false,
+        elapsed: 1,
+        path: [],
+      }],
+    }))
+  }, date)
+  await page.reload()
+
+  await expect(page.getByText('Putt 1/5')).toBeVisible()
+  await expect(page.locator('.result-panel')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Putt', exact: true })).toBeVisible()
+  const migrated = await page.evaluate((roundDate) => {
+    const value = localStorage.getItem(`puttle:round:v1:${roundDate}`)
+    return value ? JSON.parse(value) as { puzzleFingerprint?: string; strokes: unknown[] } : undefined
+  }, date)
+  expect(migrated?.puzzleFingerprint).toBeTruthy()
+  expect(migrated?.strokes).toEqual([])
 })

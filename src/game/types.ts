@@ -14,6 +14,7 @@ export interface PlayedStroke {
 
 export interface SavedRound {
   date: string
+  puzzleFingerprint: string
   strokes: PlayedStroke[]
 }
 

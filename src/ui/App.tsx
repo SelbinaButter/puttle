@@ -152,7 +152,7 @@ export default function App() {
       })
       .then((nextPuzzle) => {
         if (nextPuzzle.version !== 2 || !nextPuzzle.approach) throw new Error('That green uses an obsolete puzzle format.')
-        const savedStrokes = mode === 'practice' ? [] : loadRound(nextPuzzle.date).strokes
+        const savedStrokes = mode === 'practice' ? [] : loadRound(nextPuzzle).strokes
         setPuzzle(nextPuzzle)
         setApproachResult(simulateRoll(nextPuzzle, nextPuzzle.approach.from, nextPuzzle.approach.velocity))
         setStrokes(savedStrokes)
@@ -175,7 +175,7 @@ export default function App() {
   }, [mode, practiceRun, selectedDate])
 
   useEffect(() => {
-    if (puzzle && mode !== 'practice') saveRound({ date: puzzle.date, strokes })
+    if (puzzle && mode !== 'practice') saveRound(puzzle, strokes)
   }, [mode, puzzle, strokes])
 
   useEffect(() => {

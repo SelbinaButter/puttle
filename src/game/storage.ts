@@ -1,4 +1,5 @@
 import { localDate, previousDate } from './date'
+import type { PuzzleDefinition } from '../sim'
 import type { PlayerStats, SavedRound } from './types'
 
 const LEGACY_ROUND_KEY = 'break:round:v1'
@@ -26,15 +27,30 @@ function read<T>(key: string): T | undefined {
   }
 }
 
-export function loadRound(date: string): SavedRound {
-  const saved =
-    read<SavedRound>(`${ROUND_KEY_PREFIX}${date}`) ??
-    read<SavedRound>(`${LEGACY_ROUND_KEY_PREFIX}${date}`) ??
-    read<SavedRound>(LEGACY_ROUND_KEY)
-  return saved?.date === date ? saved : { date, strokes: [] }
+export function puzzleFingerprint(puzzle: PuzzleDefinition): string {
+  // The public definition has deterministic property order. Retaining its
+  // complete serialization makes this an exact identity check, so any future
+  // archive regeneration safely invalidates incompatible stroke coordinates.
+  return JSON.stringify(puzzle)
 }
 
-export function saveRound(round: SavedRound): void {
+export function loadRound(puzzle: PuzzleDefinition): SavedRound {
+  const fingerprint = puzzleFingerprint(puzzle)
+  const saved =
+    read<SavedRound>(`${ROUND_KEY_PREFIX}${puzzle.date}`) ??
+    read<SavedRound>(`${LEGACY_ROUND_KEY_PREFIX}${puzzle.date}`) ??
+    read<SavedRound>(LEGACY_ROUND_KEY)
+  return saved?.date === puzzle.date && saved.puzzleFingerprint === fingerprint
+    ? saved
+    : { date: puzzle.date, puzzleFingerprint: fingerprint, strokes: [] }
+}
+
+export function saveRound(puzzle: PuzzleDefinition, strokes: SavedRound['strokes']): void {
+  const round: SavedRound = {
+    date: puzzle.date,
+    puzzleFingerprint: puzzleFingerprint(puzzle),
+    strokes,
+  }
   localStorage.setItem(`${ROUND_KEY_PREFIX}${round.date}`, JSON.stringify(round))
 }
 
