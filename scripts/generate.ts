@@ -12,6 +12,13 @@ function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
+function localIsoDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00Z`)
   value.setUTCDate(value.getUTCDate() + days)
@@ -36,7 +43,7 @@ function parseArguments(argv: string[]): Arguments {
       : days
     return { dates: Array.from({ length: count }, (_, index) => addDays(from, index)), salt, missingOnly }
   }
-  return { dates: [isoDate(new Date())], salt, missingOnly }
+  return { dates: [localIsoDate(new Date())], salt, missingOnly }
 }
 
 async function exists(path: string): Promise<boolean> {

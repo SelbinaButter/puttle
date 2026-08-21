@@ -2,6 +2,16 @@ import { expect, test } from '@playwright/test'
 import { localDate, previousDate } from '../../src/game/date'
 import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../../src/sim'
 
+test('an archive deep link opens the specified green', async ({ page }) => {
+  const archiveDate = previousDate(localDate())
+  await page.goto(`/?archive=${archiveDate}`)
+
+  await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.archive-picker select')).toHaveValue(archiveDate)
+  await expect(page.locator('footer')).toContainText(`Local date ${archiveDate}`)
+  await expect(page).toHaveURL(new RegExp(`archive=${archiveDate}$`))
+})
+
 test('archive, practice, and close-to-banner result flow work', async ({ page }) => {
   const next = new Date()
   next.setDate(next.getDate() + 1)

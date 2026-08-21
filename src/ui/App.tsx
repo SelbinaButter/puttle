@@ -9,8 +9,10 @@ import {
   type PuzzleDefinition,
 } from '../sim'
 import { localDate, previousDate } from '../game/date'
+import { archiveDateFromUrl, gameUrl, shareGameUrl } from '../game/links'
 import { formatFeet, shareText } from '../game/share'
 import { MAX_PUTTS } from '../game/constants'
+import { canTapIn, createTapInResult } from '../game/tapIn'
 import {
   hasSeenOnboarding,
   loadRound,
@@ -43,9 +45,11 @@ function randomIndex(length: number): number {
 }
 
 export default function App() {
-  const [today, setToday] = useState(() => localDate())
-  const [mode, setMode] = useState<GameMode>('daily')
-  const [selectedDate, setSelectedDate] = useState(today)
+  const initialToday = localDate()
+  const initialArchiveDate = archiveDateFromUrl(window.location.href, initialToday)
+  const [today, setToday] = useState(initialToday)
+  const [mode, setMode] = useState<GameMode>(initialArchiveDate ? 'archive' : 'daily')
+  const [selectedDate, setSelectedDate] = useState(initialArchiveDate ?? initialToday)
   const [availableDates, setAvailableDates] = useState<string[]>([today])
   const [practiceRun, setPracticeRun] = useState(0)
   const [puzzle, setPuzzle] = useState<PuzzleDefinition>()
@@ -103,6 +107,9 @@ export default function App() {
     fetch(`${import.meta.env.BASE_URL}puzzles/${selectedDate}.json`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`That green is not in the archive yet (${response.status}).`)
+        if (!response.headers.get('content-type')?.includes('application/json')) {
+          throw new Error('That green is not in the archive yet.')
+        }
         return response.json() as Promise<PuzzleDefinition>
       })
       .then((nextPuzzle) => {
@@ -128,6 +135,14 @@ export default function App() {
   useEffect(() => {
     if (puzzle && mode !== 'practice') saveRound({ date: puzzle.date, strokes })
   }, [mode, puzzle, strokes])
+
+  useEffect(() => {
+    window.history.replaceState(
+      null,
+      '',
+      gameUrl(import.meta.env.BASE_URL, window.location.href, mode, selectedDate),
+    )
+  }, [mode, selectedDate])
 
   const won = strokes.at(-1)?.holed ?? false
   const failed = !won && strokes.length >= MAX_PUTTS
@@ -196,9 +211,8 @@ export default function App() {
     setSelectedDate(availableDates[nextIndex])
   }
 
-  const startPutt = () => {
+  const rollStroke = (result: ReturnType<typeof simulatePutt>) => {
     if (!puzzle || !ball || animation || finished) return
-    const result = simulatePutt(puzzle, ball, aimIndex, speedIndex)
     const started = performance.now()
     const nextAnimation: Animation = { result, aimIndex, speedIndex, startTime: started, time: 0 }
     setAnimation(nextAnimation)
@@ -239,6 +253,17 @@ export default function App() {
     frame.current = requestAnimationFrame(tick)
   }
 
+  const startPutt = () => {
+    if (!puzzle || !ball || animation || finished) return
+    rollStroke(simulatePutt(puzzle, ball, aimIndex, speedIndex))
+  }
+
+  const tapIn = () => {
+    if (!puzzle || !ball || animation || finished) return
+    const result = createTapInResult(ball, puzzle.hole)
+    if (result) rollStroke(result)
+  }
+
   useEffect(
     () => () => {
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
@@ -248,9 +273,12 @@ export default function App() {
 
   const copyResult = async () => {
     if (!puzzle) return
-    const shareUrl = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-      ? undefined
-      : new URL(import.meta.env.BASE_URL, window.location.href).href.replace(/\/$/, '')
+    const shareUrl = shareGameUrl(
+      import.meta.env.BASE_URL,
+      window.location.href,
+      mode,
+      puzzle.date,
+    )
     const text = shareText(puzzle, strokes, { mode, url: shareUrl })
     if (navigator.share) {
       try {
@@ -271,6 +299,7 @@ export default function App() {
   const distance = puzzle && ball
     ? Math.sqrt((puzzle.hole.x - ball.x) ** 2 + (puzzle.hole.y - ball.y) ** 2)
     : 0
+  const tapInAvailable = Boolean(puzzle && ball && canTapIn(ball, puzzle.hole))
   const modeLabel = mode === 'daily' ? 'Daily puzzle' : mode === 'archive' ? 'Archive' : 'Practice'
 
   const closeOnboarding = () => {
@@ -396,7 +425,13 @@ export default function App() {
           {!finished && lastStroke && (
             <div className={`stroke-feedback ${lastStroke.lipOut ? 'lip-out' : ''}`} role="status">
               <b>{lastStroke.lipOut ? 'Lipped out — too firm.' : `${formatFeet(lastStroke.finalDistance)} remains.`}</b>
-              <span>{lastStroke.lipOut ? `${formatFeet(lastStroke.finalDistance)} remains.` : 'Use the trace for your next read.'}</span>
+              <span>
+                {tapInAvailable
+                  ? 'Aim and speed are locked. Tap it in.'
+                  : lastStroke.lipOut
+                    ? `${formatFeet(lastStroke.finalDistance)} remains.`
+                    : 'Use the trace for your next read.'}
+              </span>
             </div>
           )}
 
@@ -427,17 +462,25 @@ export default function App() {
             <div className="controls" aria-label="Putt controls">
               <label>
                 <span><b>Aim</b><output>{aimDegrees(aimIndex) > 0 ? '+' : ''}{aimDegrees(aimIndex).toFixed(1)}°</output></span>
-                <input type="range" min="0" max={AIM_COUNT - 1} step="1" value={aimIndex} disabled={Boolean(animation)} onChange={(event) => setAimIndex(Number(event.target.value))} />
+                <input type="range" min="0" max={AIM_COUNT - 1} step="1" value={aimIndex} disabled={Boolean(animation) || tapInAvailable} onChange={(event) => setAimIndex(Number(event.target.value))} />
                 <small><span>15° left</span><span>Straight</span><span>15° right</span></small>
               </label>
               <label>
                 <span><b>Speed</b><output>{speedPastFeet(speedIndex).toFixed(1)} ft past</output></span>
-                <input type="range" min="0" max={SPEED_COUNT - 1} step="1" value={speedIndex} disabled={Boolean(animation)} onChange={(event) => setSpeedIndex(Number(event.target.value))} />
+                <input type="range" min="0" max={SPEED_COUNT - 1} step="1" value={speedIndex} disabled={Boolean(animation) || tapInAvailable} onChange={(event) => setSpeedIndex(Number(event.target.value))} />
                 <small><span>Die it</span><span>Firm</span></small>
               </label>
-              <button className="putt-button" type="button" disabled={Boolean(animation)} onClick={startPutt}>
-                {animation ? 'Rolling…' : 'Putt'}
-              </button>
+              <div className="stroke-actions">
+                {tapInAvailable ? (
+                  <button className="tap-in-button" type="button" disabled={Boolean(animation)} onClick={tapIn}>
+                    Tap in
+                  </button>
+                ) : (
+                  <button className="putt-button" type="button" disabled={Boolean(animation)} onClick={startPutt}>
+                    {animation ? 'Rolling…' : 'Putt'}
+                  </button>
+                )}
+              </div>
             </div>
           ) : null}
         </section>
@@ -455,7 +498,7 @@ export default function App() {
             <ol>
               <li><b>1</b><span><strong>Choose your line</strong>Aim left or right and set how firmly the ball should pass the cup.</span></li>
               <li><b>2</b><span><strong>Read the trace</strong>The slope is hidden. Every curve and stopping point is your clue.</span></li>
-              <li><b>3</b><span><strong>Finish in five</strong>Hole the putt within five strokes, then share your result.</span></li>
+              <li><b>3</b><span><strong>Finish in five</strong>Inside one foot, Tap in safely adds your final stroke. Hole out within five, then share.</span></li>
             </ol>
             <button type="button" onClick={closeOnboarding}>Play today’s green</button>
           </section>

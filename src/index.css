@@ -52,8 +52,12 @@ button:disabled { cursor: default; opacity: .5; }
 .controls output { color: #f0df7c; font-variant-numeric: tabular-nums; }
 .controls small { display: flex; justify-content: space-between; color: #758c7c; font-size: .62rem; }
 input[type="range"] { width: 100%; accent-color: #e8d970; }
-.putt-button, .result-panel button, .win-card > button:not(.win-close):not(.text-button) { min-width: 112px; padding: 13px 18px; border: 0; border-radius: 12px; color: #172419; background: #ecde79; font-weight: 850; box-shadow: 0 5px 18px rgba(236,222,121,.16); }
+.stroke-actions { display: flex; gap: 9px; }
+.stroke-actions > button { flex: 1; }
+.putt-button, .tap-in-button, .result-panel button, .win-card > button:not(.win-close):not(.text-button) { min-width: 112px; padding: 13px 18px; border: 0; border-radius: 12px; color: #172419; background: #ecde79; font-weight: 850; box-shadow: 0 5px 18px rgba(236,222,121,.16); }
+.tap-in-button { color: #eef8dd; background: #367549; box-shadow: 0 5px 18px rgba(66,151,87,.2); }
 .putt-button:hover:not(:disabled), .result-panel button:hover, .win-card > button:not(.win-close):not(.text-button):hover { background: #fff19a; transform: translateY(-1px); }
+.tap-in-button:hover:not(:disabled) { background: #438a57; transform: translateY(-1px); }
 .first-read { padding: 12px 20px; color: #9fb4a3; border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(238,222,121,.035); font-size: .75rem; line-height: 1.5; }
 .first-read b { color: #e8dd9a; }
 .stroke-feedback { display: flex; min-height: 46px; padding: 10px 20px; align-items: center; gap: 8px; color: #8fa595; border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); background: rgba(185,220,255,.04); font-size: .75rem; }
@@ -103,7 +107,8 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .readout-row { gap: 8px; padding: 11px 12px; font-size: .68rem; }
   .canvas-wrap { height: 52vh; min-height: 350px; }
   .controls { grid-template-columns: 1fr; gap: 15px; padding: 16px; }
-  .putt-button { width: 100%; }
+  .stroke-actions { width: 100%; }
+  .putt-button, .tap-in-button { width: 100%; }
   .first-read { padding: 11px 16px; }
   .stroke-feedback { padding: 10px 16px; align-items: flex-start; flex-direction: column; gap: 2px; }
   .result-panel { align-items: stretch; flex-direction: column; gap: 13px; }

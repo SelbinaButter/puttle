@@ -6,9 +6,11 @@ A daily blind-read putting puzzle. Pick an aim and a speed before the contours a
 
 ```bash
 npm install
-npm run generate
 npm run dev
 ```
+
+Starting the development server generates today’s local-date puzzle if it is missing. Run
+`npm run generate` directly when you only want to refresh the puzzle archive.
 
 Useful commands:
 
