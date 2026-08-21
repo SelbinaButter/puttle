@@ -18,7 +18,7 @@ export function gameUrl(
   url.search = ''
   url.hash = ''
   if (mode === 'archive') url.searchParams.set(ARCHIVE_QUERY_PARAMETER, puzzleDate)
-  return url.href.replace(/\/$/, '')
+  return url.href
 }
 
 export function shareGameUrl(

@@ -39,6 +39,16 @@ describe('game links', () => {
       'https://puttle.example/game/?archive=2026-08-20',
       'daily',
       '2026-08-21',
-    )).toBe('https://puttle.example/game')
+    )).toBe('https://puttle.example/game/')
+  })
+
+  it('keeps the deployment subpath after the browser URL loses its trailing slash', () => {
+    const appBaseUrl = new URL('./', 'https://selbinabutter.github.io/puttle/').href
+    expect(shareGameUrl(
+      appBaseUrl,
+      'https://selbinabutter.github.io/puttle',
+      'archive',
+      '2026-08-20',
+    )).toBe('https://selbinabutter.github.io/puttle/?archive=2026-08-20')
   })
 })

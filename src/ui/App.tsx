@@ -64,6 +64,7 @@ export default function App() {
   const [showResult, setShowResult] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding())
   const [copied, setCopied] = useState(false)
+  const [appBaseUrl] = useState(() => new URL(import.meta.env.BASE_URL, window.location.href).href)
   const frame = useRef<number>()
 
   useEffect(() => {
@@ -140,9 +141,9 @@ export default function App() {
     window.history.replaceState(
       null,
       '',
-      gameUrl(import.meta.env.BASE_URL, window.location.href, mode, selectedDate),
+      gameUrl(appBaseUrl, window.location.href, mode, selectedDate),
     )
-  }, [mode, selectedDate])
+  }, [appBaseUrl, mode, selectedDate])
 
   const won = strokes.at(-1)?.holed ?? false
   const failed = !won && strokes.length >= MAX_PUTTS
@@ -274,7 +275,7 @@ export default function App() {
   const copyResult = async () => {
     if (!puzzle) return
     const shareUrl = shareGameUrl(
-      import.meta.env.BASE_URL,
+      appBaseUrl,
       window.location.href,
       mode,
       puzzle.date,
