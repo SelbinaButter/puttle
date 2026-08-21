@@ -1,14 +1,17 @@
 import { expect, test } from '@playwright/test'
+import { previousUtcDate } from '../../src/game/date'
 import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../../src/sim'
 
 test('archive, practice, and close-to-banner result flow work', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Play today’s green' }).click()
   await expect(page.getByRole('heading', { name: 'Puttle' })).toBeVisible()
+  const today = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
+  expect(today).toBeDefined()
 
   await page.getByRole('button', { name: 'Archive' }).click()
   await expect(page.getByText('Archived green')).toBeVisible()
-  await expect(page.locator('.archive-picker select')).toHaveValue('2026-08-19')
+  await expect(page.locator('.archive-picker select')).toHaveValue(previousUtcDate(today!))
   await expect(page.locator('.game-card')).toBeVisible()
 
   await page.getByRole('button', { name: 'Practice' }).click()
