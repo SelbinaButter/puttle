@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AIM_COUNT,
   SPEED_COUNT,
@@ -8,7 +8,7 @@ import {
   type PathPoint,
   type PuzzleDefinition,
 } from '../sim'
-import { previousUtcDate, utcDate } from '../game/date'
+import { localDate, previousDate } from '../game/date'
 import { formatFeet, shareText } from '../game/share'
 import { MAX_PUTTS } from '../game/constants'
 import {
@@ -43,7 +43,7 @@ function randomIndex(length: number): number {
 }
 
 export default function App() {
-  const today = useMemo(() => utcDate(), [])
+  const [today, setToday] = useState(() => localDate())
   const [mode, setMode] = useState<GameMode>('daily')
   const [selectedDate, setSelectedDate] = useState(today)
   const [availableDates, setAvailableDates] = useState<string[]>([today])
@@ -61,6 +61,28 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding())
   const [copied, setCopied] = useState(false)
   const frame = useRef<number>()
+
+  useEffect(() => {
+    let timer: number
+    const syncDate = () => {
+      const date = localDate()
+      setToday(date)
+      if (mode === 'daily') setSelectedDate(date)
+    }
+    const scheduleMidnight = () => {
+      const now = new Date()
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+      timer = window.setTimeout(() => { syncDate(); scheduleMidnight() }, midnight.getTime() - now.getTime() + 100)
+    }
+    scheduleMidnight()
+    window.addEventListener('focus', syncDate)
+    document.addEventListener('visibilitychange', syncDate)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('focus', syncDate)
+      document.removeEventListener('visibilitychange', syncDate)
+    }
+  }, [mode])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -158,7 +180,7 @@ export default function App() {
     const nextDate =
       nextMode === 'daily'
         ? today
-        : availableDates.filter((date) => date < today).at(-1) ?? previousUtcDate(today)
+        : availableDates.filter((date) => date < today).at(-1) ?? previousDate(today)
     beginLoad()
     setMode(nextMode)
     setSelectedDate(nextDate)
@@ -422,7 +444,7 @@ export default function App() {
       )}
 
       <footer>
-        The slope stays hidden until the round ends. Every trace is part of your read. · UTC {selectedDate}
+        The slope stays hidden until the round ends. Every trace is part of your read. · Local date {selectedDate}
       </footer>
 
       {showOnboarding && (

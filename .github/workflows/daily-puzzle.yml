@@ -37,8 +37,17 @@ jobs:
             .generated/solutions
           key: puzzle-archive-${{ github.run_id }}
           restore-keys: puzzle-archive-
-      - name: Generate archive through today (UTC)
-        run: npm run generate -- --from 2026-01-01 --through "$(date -u +%F)" --missing
+      - name: Generate through tomorrow for local-midnight releases
+        run: |
+          tomorrow="$(node -p 'new Date(Date.now() + 86400000).toISOString().slice(0, 10)')"
+          npx tsx scripts/generate.ts --from 2026-01-01 --through "$tomorrow" --missing
+      - name: Verify the local-time release window is in the archive
+        run: |
+          today="$(date -u +%F)"
+          tomorrow="$(node -p 'new Date(Date.now() + 86400000).toISOString().slice(0, 10)')"
+          test -f "public/puzzles/${today}.json"
+          test -f "public/puzzles/${tomorrow}.json"
+          node -e 'const fs=require("node:fs"); const today=new Date(); const dates=[today, new Date(today.getTime()+86400000)].map(date=>date.toISOString().slice(0,10)); const index=JSON.parse(fs.readFileSync("public/puzzles/index.json","utf8")); for (const date of dates) if (!index.dates.includes(date)) throw new Error(`Puzzle index does not contain ${date}`)'
       - run: npm test
         env:
           CI: true

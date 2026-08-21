@@ -1,4 +1,4 @@
-import { previousUtcDate, utcDate } from './date'
+import { localDate, previousDate } from './date'
 import type { PlayerStats, SavedRound } from './types'
 
 const LEGACY_ROUND_KEY = 'break:round:v1'
@@ -38,11 +38,11 @@ export function saveRound(round: SavedRound): void {
 
 export function loadStats(): PlayerStats {
   const stats = read<PlayerStats>(STATS_KEY) ?? read<PlayerStats>(LEGACY_STATS_KEY) ?? { ...EMPTY_STATS }
-  const today = utcDate()
+  const today = localDate()
   if (
     stats.lastCompletedDate &&
     stats.lastCompletedDate !== today &&
-    stats.lastCompletedDate !== previousUtcDate(today)
+    stats.lastCompletedDate !== previousDate(today)
   ) {
     return { ...stats, currentStreak: 0 }
   }
@@ -58,7 +58,7 @@ export function recordResult(
   if (stats.history.some((entry) => entry.date === date)) return stats
   const currentStreak = strokes === null
     ? 0
-    : stats.lastCompletedDate === previousUtcDate(date) ? stats.currentStreak + 1 : 1
+    : stats.lastCompletedDate === previousDate(date) ? stats.currentStreak + 1 : 1
   const distributionKey = strokes === null ? 'X' : String(strokes)
   const updated: PlayerStats = {
     currentStreak,

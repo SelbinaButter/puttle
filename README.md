@@ -1,6 +1,6 @@
 # Puttle
 
-A daily blind-read putting puzzle. Pick an aim and a speed before the contours are visible, watch the break, and use the trace to read your next putt. Everyone gets the same UTC-dated green.
+A daily blind-read putting puzzle. Pick an aim and a speed before the contours are visible, watch the break, and use the trace to read your next putt. Everyone gets the same green for their local calendar date.
 
 ## Run it
 
@@ -21,7 +21,7 @@ Useful commands:
 - Add `--missing` to keep validated files that already exist; generation also refreshes `public/puzzles/index.json`
 - `npm run build` — type-check and build the static app
 
-Public puzzle definitions and the archive manifest live in `public/puzzles/`. Validation metrics and solutions go to the gitignored `.generated/solutions/`, so they are never included in the site build. The Pages workflow restores its validated archive cache, fills missing dates through the current UTC day, and never publishes future greens.
+Public puzzle definitions and the archive manifest live in `public/puzzles/`. Validation metrics and solutions go to the gitignored `.generated/solutions/`, so they are never included in the site build. The Pages workflow restores its validated archive cache and fills missing dates through tomorrow in UTC so every time zone has its puzzle by local midnight. The browser filters future dates out of daily, archive, and practice modes until the player's calendar reaches them.
 
 ## Structure
 

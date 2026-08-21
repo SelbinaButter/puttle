@@ -1,8 +1,16 @@
 import { expect, test } from '@playwright/test'
-import { previousUtcDate } from '../../src/game/date'
+import { localDate, previousDate } from '../../src/game/date'
 import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../../src/sim'
 
 test('archive, practice, and close-to-banner result flow work', async ({ page }) => {
+  const next = new Date()
+  next.setDate(next.getDate() + 1)
+  const futureDate = localDate(next)
+  await page.route('**/puzzles/index.json', async (route) => {
+    const response = await route.fetch()
+    const index = await response.json() as { dates: string[] }
+    await route.fulfill({ response, json: { dates: [...new Set([...index.dates, futureDate])] } })
+  })
   await page.goto('/')
   await page.getByRole('button', { name: 'Play today’s green' }).click()
   await expect(page.getByRole('heading', { name: 'Puttle' })).toBeVisible()
@@ -11,7 +19,9 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
 
   await page.getByRole('button', { name: 'Archive' }).click()
   await expect(page.getByText('Archived green')).toBeVisible()
-  await expect(page.locator('.archive-picker select')).toHaveValue(previousUtcDate(today!))
+  await expect(page.locator('.archive-picker select')).toHaveValue(previousDate(today!))
+  await expect(page.locator(`.archive-picker option[value="${futureDate}"]`)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Next archived green' })).toBeDisabled()
   await expect(page.locator('.game-card')).toBeVisible()
 
   await page.getByRole('button', { name: 'Practice' }).click()
