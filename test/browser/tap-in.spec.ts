@@ -3,6 +3,7 @@ import { localDate } from '../../src/game/date'
 import { TEST_PUZZLE } from '../fixtures/puzzle'
 
 test('offers and scores a one-foot tap-in as the final stroke', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.route(/\/puzzles\/\d{4}-\d{2}-\d{2}\.json$/, async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -15,7 +16,7 @@ test('offers and scores a one-foot tap-in as the final stroke', async ({ page })
   })
 
   await page.goto('/')
-  await page.getByRole('button', { name: 'Play today’s green' }).click()
+  await page.getByRole('button', { name: "Play today's green" }).click()
   await page.evaluate(({ date, puzzle }) => {
     const final = { x: puzzle.hole.x - 0.5, y: puzzle.hole.y }
     localStorage.setItem(`puttle:round:v1:${date}`, JSON.stringify({

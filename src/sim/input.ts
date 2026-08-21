@@ -45,6 +45,8 @@ export function puttInput(
   const pastFeet = speedPastFeet(speedIndex)
   // IEEE-754 sqrt is correctly rounded. It is the only transcendental-like
   // operation in the canonical input conversion and must not be approximated.
-  const initialSpeed = Math.sqrt(2 * rollingAcceleration(stimp) * (distance + pastFeet))
+  const initialSpeed = Math.sqrt(
+    2 * rollingAcceleration(stimp) * Math.max(0, distance + pastFeet),
+  )
   return { direction, initialSpeed, distance, pastFeet }
 }

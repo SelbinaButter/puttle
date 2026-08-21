@@ -5,10 +5,10 @@ export const FIXED_DT = 1 / 240
 export const HOLE_RADIUS_FT = 4.25 / 24
 export const AIM_MIN_DEGREES = -15
 export const AIM_STEP_DEGREES = 0.5
-export const SPEED_MIN_PAST_FT = 0.5
+export const SPEED_MIN_PAST_FT = -3
 export const SPEED_STEP_PAST_FT = 0.5
 export const AIM_COUNT = 61
-export const SPEED_COUNT = 24
+export const SPEED_COUNT = 31
 
 // Literal unit vectors are part of the deterministic input protocol. Do not
 // replace them with runtime Math.sin/Math.cos calls.

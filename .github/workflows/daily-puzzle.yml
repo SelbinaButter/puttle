@@ -35,8 +35,8 @@ jobs:
           path: |
             public/puzzles
             .generated/solutions
-          key: puzzle-archive-${{ github.run_id }}
-          restore-keys: puzzle-archive-
+          key: puzzle-archive-v2-${{ github.run_id }}
+          restore-keys: puzzle-archive-v2-
       - name: Generate through tomorrow for local-midnight releases
         run: |
           tomorrow="$(node -p 'new Date(Date.now() + 86400000).toISOString().slice(0, 10)')"

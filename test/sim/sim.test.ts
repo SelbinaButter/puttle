@@ -3,14 +3,22 @@ import {
   FIXED_DT,
   GRAVITY_FTPS2,
   rollingAcceleration,
+  simulateRoll,
   simulatePutt,
   type PuzzleDefinition,
 } from '../../src/sim'
 import { TEST_PUZZLE } from '../fixtures/puzzle'
 
 describe('putting simulation', () => {
+  it('reproduces the stored approach result exactly without capturing the cup', () => {
+    const result = simulateRoll(TEST_PUZZLE, TEST_PUZZLE.approach.from, TEST_PUZZLE.approach.velocity)
+    expect(result.final.x).toBe(TEST_PUZZLE.ball.x)
+    expect(result.final.y).toBe(TEST_PUZZLE.ball.y)
+    expect(result.holed).toBe(false)
+  })
+
   it('calibrates feet-past speed on a flat green', () => {
-    const result = simulatePutt(TEST_PUZZLE, TEST_PUZZLE.ball, 30, 3, {
+    const result = simulatePutt(TEST_PUZZLE, TEST_PUZZLE.ball, 30, 10, {
       captureHole: false,
     })
     expect(result.rested).toBe(true)
@@ -19,7 +27,7 @@ describe('putting simulation', () => {
   })
 
   it('loses speed monotonically on flat ground', () => {
-    const result = simulatePutt(TEST_PUZZLE, TEST_PUZZLE.ball, 30, 10, {
+    const result = simulatePutt(TEST_PUZZLE, TEST_PUZZLE.ball, 30, 20, {
       captureHole: false,
     })
     for (let index = 1; index < result.path.length; index += 1) {
@@ -56,5 +64,12 @@ describe('putting simulation', () => {
         ),
       ).toBe(serialized)
     }
+  })
+
+  it('keeps minimum pace finite just outside tap-in range', () => {
+    const start = { x: TEST_PUZZLE.hole.x - 1.01, y: TEST_PUZZLE.hole.y }
+    const result = simulatePutt(TEST_PUZZLE, start, 30, 0)
+    expect(Number.isFinite(result.final.x)).toBe(true)
+    expect(Number.isFinite(result.final.y)).toBe(true)
   })
 })

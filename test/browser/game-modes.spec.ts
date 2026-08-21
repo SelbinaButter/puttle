@@ -3,6 +3,7 @@ import { localDate, previousDate } from '../../src/game/date'
 import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../../src/sim'
 
 test('an archive deep link opens the specified green', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   const archiveDate = previousDate(localDate())
   await page.goto(`/?archive=${archiveDate}`)
 
@@ -13,6 +14,7 @@ test('an archive deep link opens the specified green', async ({ page }) => {
 })
 
 test('archive, practice, and close-to-banner result flow work', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   const next = new Date()
   next.setDate(next.getDate() + 1)
   const futureDate = localDate(next)
@@ -22,7 +24,7 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
     await route.fulfill({ response, json: { dates: [...new Set([...index.dates, futureDate])] } })
   })
   await page.goto('/')
-  await page.getByRole('button', { name: 'Play today’s green' }).click()
+  await page.getByRole('button', { name: "Play today's green" }).click()
   await expect(page.getByRole('heading', { name: 'Puttle' })).toBeVisible()
   const today = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
   expect(today).toBeDefined()
@@ -35,7 +37,7 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   await expect(page.locator('.game-card')).toBeVisible()
 
   await page.getByRole('button', { name: 'Practice' }).click()
-  await expect(page.getByText(/doesn’t affect your daily streak/)).toBeVisible()
+  await expect(page.getByText(/doesn't affect your daily streak/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'New random green' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Today' }).click()
@@ -54,14 +56,16 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   expect(solution).toBeDefined()
   const aim = page.locator('input[type="range"]').nth(0)
   const speed = page.locator('input[type="range"]').nth(1)
+  await expect(aim).toBeEnabled()
   await aim.focus()
   const aimDirection = (solution?.aimIndex ?? 30) < 30 ? 'ArrowLeft' : 'ArrowRight'
   for (let step = 0; step < Math.abs((solution?.aimIndex ?? 30) - 30); step += 1) {
     await page.keyboard.press(aimDirection)
   }
   await speed.focus()
-  const speedDirection = (solution?.speedIndex ?? 3) < 3 ? 'ArrowLeft' : 'ArrowRight'
-  for (let step = 0; step < Math.abs((solution?.speedIndex ?? 3) - 3); step += 1) {
+  const currentSpeed = Number(await speed.inputValue())
+  const speedDirection = (solution?.speedIndex ?? currentSpeed) < currentSpeed ? 'ArrowLeft' : 'ArrowRight'
+  for (let step = 0; step < Math.abs((solution?.speedIndex ?? currentSpeed) - currentSpeed); step += 1) {
     await page.keyboard.press(speedDirection)
   }
   await page.getByRole('button', { name: 'Putt' }).click()
@@ -80,14 +84,16 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   await expect(reviewCanvas).toHaveAttribute('data-camera-mode', 'full')
   await page.getByRole('button', { name: 'Zoom in' }).click()
   await expect(reviewCanvas).toHaveAttribute('data-camera-mode', 'review')
-  await page.getByRole('button', { name: '1.5×' }).click()
+  await page.locator('.zoom-reset').click()
   await expect(reviewCanvas).toHaveAttribute('data-camera-mode', 'full')
   await expect(page.getByRole('button', { name: 'View result' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Watch approach again' })).toHaveCount(0)
 })
 
 test('a saved fifth miss is a finished X/5 round', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
-  await page.getByRole('button', { name: 'Play today’s green' }).click()
+  await page.getByRole('button', { name: "Play today's green" }).click()
   const date = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
   const puzzle = await fetch(`http://127.0.0.1:4173/puzzles/${date}.json`)
     .then((response) => response.json() as Promise<PuzzleDefinition>)

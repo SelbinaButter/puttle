@@ -26,11 +26,15 @@ export interface GreenSurface {
 }
 
 export interface PuzzleDefinition {
-  version: 1
+  version: 2
   date: string
   number: number
   stimp: number
   green: GreenSurface
+  approach: {
+    from: Vec2
+    velocity: Vec2
+  }
   ball: Vec2
   hole: Vec2
 }

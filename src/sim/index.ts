@@ -1,5 +1,7 @@
 export * from './constants'
 export * from './input'
 export * from './simulate'
+export * from './solve'
+export * from './solution'
 export * from './surface'
 export type * from './types'

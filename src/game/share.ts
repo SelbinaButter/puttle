@@ -1,6 +1,7 @@
 import type { PuzzleDefinition } from '../sim'
 import { MAX_PUTTS } from './constants'
 import type { PlayedStroke } from './types'
+import { BRAND } from './brand'
 
 export type ShareMode = 'daily' | 'archive' | 'practice'
 
@@ -33,7 +34,7 @@ export function shareText(
     (puzzle.hole.y - puzzle.ball.y) ** 2,
   )
   const lines = [
-    `\u26f3 Puttle${modeName} #${puzzle.number}  ${score}`,
+    `${BRAND.sharePrefix}${modeName} #${puzzle.number}  ${score}`,
     '',
     boxes,
     `${formatFeet(initialDistance)} \u2022 Stimp ${puzzle.stimp.toFixed(1)}`,

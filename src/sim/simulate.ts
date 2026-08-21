@@ -32,20 +32,18 @@ function pathPoint(position: Vec2, time: number, velocityX: number, velocityY: n
   }
 }
 
-export function simulatePutt(
+function simulateMotion(
   puzzle: PuzzleDefinition,
   start: Vec2,
-  aimIndex: number,
-  speedIndex: number,
+  velocity: Vec2,
   options: SimOptions = {},
 ): PuttResult {
-  const input = puttInput(start, puzzle.hole, puzzle.stimp, aimIndex, speedIndex)
   const recordPath = options.recordPath ?? true
   const captureHole = options.captureHole ?? true
   const maxSteps = Math.ceil((options.maxSeconds ?? 20) / FIXED_DT)
   let position = { ...start }
-  let velocityX = input.direction.x * input.initialSpeed
-  let velocityY = input.direction.y * input.initialSpeed
+  let velocityX = velocity.x
+  let velocityY = velocity.y
   let elapsed = 0
   let rested = false
   let holed = false
@@ -167,4 +165,32 @@ export function simulatePutt(
     elapsed,
     path,
   }
+}
+
+export function simulatePutt(
+  puzzle: PuzzleDefinition,
+  start: Vec2,
+  aimIndex: number,
+  speedIndex: number,
+  options: SimOptions = {},
+): PuttResult {
+  const input = puttInput(start, puzzle.hole, puzzle.stimp, aimIndex, speedIndex)
+  return simulateMotion(
+    puzzle,
+    start,
+    {
+      x: input.direction.x * input.initialSpeed,
+      y: input.direction.y * input.initialSpeed,
+    },
+    options,
+  )
+}
+
+export function simulateRoll(
+  puzzle: PuzzleDefinition,
+  from: Vec2,
+  velocity: Vec2,
+  options: SimOptions = {},
+): PuttResult {
+  return simulateMotion(puzzle, from, velocity, { ...options, captureHole: false })
 }

@@ -4,6 +4,8 @@ import type { PlayerStats, SavedRound } from './types'
 const LEGACY_ROUND_KEY = 'break:round:v1'
 const LEGACY_ROUND_KEY_PREFIX = 'break:round:v1:'
 const LEGACY_STATS_KEY = 'break:stats:v1'
+// Persistence is deliberately decoupled from the display brand. Renaming the
+// game must not reset saved rounds, onboarding, or player streaks.
 const ROUND_KEY_PREFIX = 'puttle:round:v1:'
 const STATS_KEY = 'puttle:stats:v1'
 const ONBOARDING_KEY = 'puttle:onboarding:v1'

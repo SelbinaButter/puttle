@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
-import { heightAt, puttInput, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
+import { heightAt, puttInput, sampleSurface, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
 import type { PlayedStroke } from '../game/types'
 
 interface Props {
@@ -8,9 +8,14 @@ interface Props {
   ball: Vec2
   aimIndex: number
   speedIndex: number
+  approachPath: PathPoint[]
+  approachTrailUntil?: number
+  animationKind?: 'approach' | 'putt'
   activePath?: PathPoint[]
   animationTime?: number
   revealPaths: PathPoint[][]
+  idealPath?: PathPoint[]
+  idealLabel?: string
   revealed: boolean
 }
 
@@ -188,7 +193,7 @@ function drawContours(
     }
   }
 
-  context.strokeStyle = 'rgba(236, 249, 214, .2)'
+  context.strokeStyle = 'rgba(236, 249, 214, .38)'
   context.lineWidth = 1
   for (let levelIndex = 1; levelIndex < 9; levelIndex += 1) {
     const level = minimum + ((maximum - minimum) * levelIndex) / 9
@@ -226,6 +231,42 @@ function drawContours(
   }
 }
 
+function drawFallLineArrows(
+  context: CanvasRenderingContext2D,
+  puzzle: PuzzleDefinition,
+  transform: Transform,
+  ratio: number,
+) {
+  context.strokeStyle = 'rgba(210, 235, 196, .55)'
+  context.fillStyle = 'rgba(210, 235, 196, .55)'
+  context.lineWidth = 1.2 * ratio
+  for (let row = 1; row <= 4; row += 1) {
+    for (let column = 1; column <= 5; column += 1) {
+      const point = {
+        x: (column / 6) * puzzle.green.width,
+        y: (row / 5) * puzzle.green.height,
+      }
+      const gradient = sampleSurface(puzzle.green, point).gradient
+      const magnitude = Math.sqrt(gradient.x * gradient.x + gradient.y * gradient.y)
+      if (magnitude < 0.0005) continue
+      const from = screen(point, transform)
+      const length = 10 * ratio
+      const direction = { x: -gradient.x / magnitude, y: -gradient.y / magnitude }
+      const to = { x: from.x + direction.x * length, y: from.y + direction.y * length }
+      context.beginPath()
+      context.moveTo(from.x, from.y)
+      context.lineTo(to.x, to.y)
+      context.stroke()
+      context.beginPath()
+      context.moveTo(to.x, to.y)
+      context.lineTo(to.x - direction.x * 3.5 * ratio - direction.y * 2.5 * ratio, to.y - direction.y * 3.5 * ratio + direction.x * 2.5 * ratio)
+      context.lineTo(to.x - direction.x * 3.5 * ratio + direction.y * 2.5 * ratio, to.y - direction.y * 3.5 * ratio - direction.x * 2.5 * ratio)
+      context.closePath()
+      context.fill()
+    }
+  }
+}
+
 export function GreenCanvas(props: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const transformRef = useRef<Transform>()
@@ -258,7 +299,7 @@ export function GreenCanvas(props: Props) {
       canvas,
       props.puzzle,
       props.ball,
-      !props.revealed,
+      !props.revealed && props.animationKind !== 'approach',
       props.revealed ? reviewCamera : undefined,
     )
     transformRef.current = transform
@@ -282,14 +323,40 @@ export function GreenCanvas(props: Props) {
     )
     context.fill()
 
-    if (props.revealed) drawContours(context, props.puzzle, transform)
+    // Slope-derived drawing belongs strictly behind the end-of-round gate.
+    // Pre-reveal rendering must never use heightAt/sampleSurface.
+    if (props.revealed) {
+      drawContours(context, props.puzzle, transform)
+      drawFallLineArrows(context, props.puzzle, transform, ratio)
+    }
+    drawPath(
+      context,
+      props.approachPath,
+      transform,
+      'rgba(174, 201, 183, .72)',
+      2.6 * ratio,
+      props.approachTrailUntil,
+    )
     for (const path of props.revealPaths) {
-      drawPath(context, path, transform, 'rgba(239, 224, 129, .075)', 3 * ratio)
+      drawPath(context, path, transform, 'rgba(239, 224, 129, .18)', 3 * ratio)
     }
     props.strokes.forEach((stroke, index) => {
       const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
       drawPath(context, stroke.path, transform, palette[index % palette.length], 2.25 * ratio)
     })
+    if (props.idealPath) {
+      drawPath(context, props.idealPath, transform, '#fff09a', 4.5 * ratio)
+      const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]
+      if (labelPoint && props.idealLabel) {
+        const pixel = screen(labelPoint, transform)
+        context.font = `700 ${11 * ratio}px Inter, sans-serif`
+        context.fillStyle = 'rgba(8, 25, 15, .9)'
+        const width = context.measureText(props.idealLabel).width + 14 * ratio
+        context.fillRect(pixel.x + 8 * ratio, pixel.y - 20 * ratio, width, 18 * ratio)
+        context.fillStyle = '#fff3ad'
+        context.fillText(props.idealLabel, pixel.x + 15 * ratio, pixel.y - 7 * ratio)
+      }
+    }
 
     const input = puttInput(
       props.ball,
@@ -298,7 +365,7 @@ export function GreenCanvas(props: Props) {
       props.aimIndex,
       props.speedIndex,
     )
-    if (!props.activePath && !props.revealed) {
+    if (!props.activePath && !props.revealed && props.animationKind !== 'approach') {
       const start = screen(props.ball, transform)
       const guideLength = Math.min(
         12,
@@ -321,7 +388,7 @@ export function GreenCanvas(props: Props) {
       context.setLineDash([])
     }
 
-    if (props.activePath) {
+    if (props.activePath && props.animationKind === 'putt') {
       drawPath(
         context,
         props.activePath,
@@ -464,7 +531,7 @@ export function GreenCanvas(props: Props) {
         aria-label="Putting green"
         data-camera-mode={props.revealed && reviewCamera.zoom > 1
           ? 'review'
-          : usesCloseCamera(props.puzzle, props.ball, !props.revealed) ? 'close' : 'full'}
+          : usesCloseCamera(props.puzzle, props.ball, !props.revealed && props.animationKind !== 'approach') ? 'close' : 'full'}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

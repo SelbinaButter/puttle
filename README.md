@@ -1,6 +1,8 @@
-# Puttle
+# Daily putting puzzle
 
-A daily blind-read putting puzzle. Pick an aim and a speed before the contours are visible, watch the break, and use the trace to read your next putt. Everyone gets the same green for their local calendar date.
+A daily blind-read putting puzzle. Watch an approach roll, pick an aim and pace before the contours are visible, and use every trace to read the green. Everyone gets the same green for their local calendar date.
+
+Display name, share prefix, and tagline live in `src/game/brand.ts`; changing the brand does not change persistence keys or the generator seed.
 
 ## Run it
 
