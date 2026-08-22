@@ -416,7 +416,7 @@ export default function App() {
               revealed={finished}
             />
             {finished && showResult && (
-              <div className="win-card" role="dialog" aria-label="Puzzle result">
+              <div className="win-card" role="dialog" aria-modal="true" aria-label="Puzzle result">
                 <button className="win-close" type="button" aria-label="Close result" onClick={() => setShowResult(false)}>×</button>
                 <span className="eyebrow">{won ? 'Holed' : 'Round complete'}</span>
                 <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
@@ -437,8 +437,8 @@ export default function App() {
             </div>
           )}
 
-          {finished && !showResult ? (
-            <div className="result-panel">
+          {finished ? (
+            <div className={`result-panel ${showResult ? 'behind-result' : ''}`} aria-hidden={showResult || undefined}>
               <div>
                 <span className="eyebrow">{won ? 'Holed \u00b7 Green revealed' : 'Five putts \u00b7 Green revealed'}</span>
                 <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
@@ -449,14 +449,14 @@ export default function App() {
                 <button
                   className="secondary-button"
                   type="button"
-                  disabled={!solution?.ideal}
+                  disabled={showResult || !solution?.ideal}
                   aria-pressed={showSolution}
                   onClick={() => setShowSolution((visible) => !visible)}
                 >
                   {showSolution ? 'Hide solution line' : solvingReveal ? 'Finding a line…' : solution?.ideal ? 'Show a makeable line' : 'No solution found'}
                 </button>
-                {mode === 'practice' ? <button className="secondary-button result-nav-action" type="button" onClick={choosePracticePuzzle}>New green</button> : <>{mode !== 'archive' && <button className="secondary-button result-nav-action" type="button" onClick={() => changeMode('archive')}>Archive</button>}<button className="secondary-button result-nav-action" type="button" onClick={choosePracticePuzzle}>Practice</button></>}
-                <button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
+                {mode === 'practice' ? <button className="secondary-button result-nav-action" type="button" disabled={showResult} onClick={choosePracticePuzzle}>New green</button> : <>{mode !== 'archive' && <button className="secondary-button result-nav-action" type="button" disabled={showResult} onClick={() => changeMode('archive')}>Archive</button>}<button className="secondary-button result-nav-action" type="button" disabled={showResult} onClick={choosePracticePuzzle}>Practice</button></>}
+                <button type="button" disabled={showResult} onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
               </div>
             </div>
           ) : !finished ? (

@@ -41,6 +41,21 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   await page.reload()
 
   expect(await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)).toBe(false)
+  const reviewCanvasBounds = await page.locator('.green-canvas.reviewing').boundingBox()
+  expect(reviewCanvasBounds).not.toBeNull()
+  expect(reviewCanvasBounds?.height).toBeGreaterThanOrEqual(300)
+  await expect(page.getByLabel('Green review controls')).toBeHidden()
+
+  await page.getByRole('button', { name: 'View result' }).tap()
+  const resultDialogBounds = await page.getByRole('dialog', { name: 'Puzzle result' }).boundingBox()
+  expect(resultDialogBounds).not.toBeNull()
+  await expect(page.locator('.result-panel')).toBeVisible()
+  const resultPanelWhileOpen = await page.locator('.result-panel').boundingBox()
+  await page.getByRole('dialog', { name: 'Puzzle result' }).getByRole('button', { name: 'View green' }).tap()
+  const resultPanelAfterClose = await page.locator('.result-panel').boundingBox()
+  expect(resultPanelAfterClose?.y).toBe(resultPanelWhileOpen?.y)
+  expect(resultPanelAfterClose?.height).toBe(resultPanelWhileOpen?.height)
+
   await expect(page.locator('.result-panel .result-nav-action').first()).toBeHidden()
   const resultPanelBounds = await page.locator('.result-panel').boundingBox()
   const shareBounds = await page.getByRole('button', { name: 'Share result' }).boundingBox()
