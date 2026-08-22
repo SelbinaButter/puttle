@@ -491,8 +491,10 @@ export default function App() {
       )}
 
       <footer>
-        The slope stays hidden until the round ends.
-        {mode === 'daily' && <> · Local date {today} · Local time <span className="local-clock">{localTime}</span></>}
+        <span className="footer-guidance">The slope stays hidden until the round ends.</span>
+        {mode === 'daily' && (
+          <span className="footer-local"><span className="footer-separator"> · </span>Local time {today} <span className="local-clock">{localTime}</span></span>
+        )}
       </footer>
 
       {showOnboarding && (

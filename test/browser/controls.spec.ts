@@ -45,6 +45,12 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
   expect(buttonBounds).not.toBeNull()
   expect((buttonBounds?.y ?? Infinity) + (buttonBounds?.height ?? 0)).toBeLessThanOrEqual(874)
 
+  const footerGuidanceBounds = await page.locator('.footer-guidance').boundingBox()
+  const footerLocalBounds = await page.locator('.footer-local').boundingBox()
+  expect(footerLocalBounds?.y).toBeGreaterThanOrEqual(
+    (footerGuidanceBounds?.y ?? 0) + (footerGuidanceBounds?.height ?? 0),
+  )
+
   await page.getByRole('button', { name: 'Archive', exact: true }).click()
   const tabsBounds = await page.getByRole('navigation', { name: 'Game mode' }).boundingBox()
   const pickerBounds = await page.getByLabel('Archived green', { exact: true }).boundingBox()

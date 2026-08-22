@@ -166,6 +166,8 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .win-card .muted { font-size: clamp(.7rem, 3.1vw, .78rem); white-space: nowrap; }
   .intro-card { padding: 23px 20px; }
   .intro-card h2 { font-size: clamp(1.25rem, 6vw, 2rem); letter-spacing: -.025em; white-space: nowrap; }
+  .footer-local { display: block; margin-top: 2px; }
+  .footer-separator { display: none; }
   footer { line-height: 1.5; }
 }
 

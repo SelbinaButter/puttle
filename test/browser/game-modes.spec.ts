@@ -27,8 +27,9 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   await page.goto('/')
   await page.getByRole('button', { name: "Play today's green" }).click()
   await expect(page.getByRole('heading', { name: 'Puttle' })).toBeVisible()
-  await expect(page.locator('footer')).toContainText('Local date')
-  await expect(page.locator('footer')).toContainText(/Local time \d{2}:\d{2}:\d{2}/)
+  await expect(page.locator('footer')).toContainText(/Local time \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+  await expect(page.locator('footer')).not.toContainText('Local date')
+  await expect(page.locator('.footer-local')).toHaveCSS('display', 'inline')
   const today = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
   expect(today).toBeDefined()
 
