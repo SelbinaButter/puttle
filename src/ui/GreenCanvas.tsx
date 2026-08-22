@@ -733,6 +733,7 @@ export function GreenCanvas(props: Props) {
         ref={canvasRef}
         className={`green-canvas ${props.revealed ? 'reviewing' : props.aimEnabled ? 'aiming' : ''}`}
         aria-label={props.aimEnabled ? 'Putting green. Drag sideways to aim and forward or back to set pace.' : 'Putting green'}
+        data-solution-visible={Boolean(props.idealPath)}
         data-camera-mode={props.revealed && reviewCamera.zoom > 1
           ? 'review'
           : usesCloseCamera(props.puzzle, props.ball, !props.revealed && props.animationKind !== 'approach') ? 'close' : 'full'}

@@ -120,15 +120,18 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .stats-button { gap: 4px; flex-direction: row; }
   .stats-button span { padding: 4px 7px; font-size: .62rem; }
   .mode-switcher { margin-bottom: 8px; }
-  .mode-switcher.with-archive-picker { display: flex; align-items: center; gap: 7px; }
+  .mode-switcher.with-mode-action { display: flex; align-items: center; gap: 7px; }
   .mode-tabs { margin: 0; padding: 3px; }
   .mode-tabs button { padding: 6px 11px; font-size: .68rem; }
   .mode-panel { min-height: 0; margin-bottom: 8px; }
-  .mode-switcher .archive-picker { width: auto; margin: 0 0 0 auto; padding: 3px; gap: 0; }
+  .mode-switcher .archive-picker,
+  .mode-switcher .practice-panel { width: auto; margin: 0 0 0 auto; padding: 3px; gap: 0; }
   .archive-picker > button { display: none; }
   .archive-picker label span { display: none; }
   .archive-picker select { width: 126px; padding: 6px 7px; font-size: .67rem; }
-  .practice-panel { align-items: stretch; flex-direction: column; }
+  .mode-switcher .practice-panel { align-items: center; flex-direction: row; }
+  .mode-switcher .practice-panel span { display: none; }
+  .mode-switcher .practice-panel button { padding: 6px 8px; font-size: .67rem; white-space: nowrap; }
   .game-card { border-radius: 16px; }
   .readout-row { gap: 6px 8px; padding: 8px 11px; font-size: .64rem; flex-wrap: wrap; }
   .approach-replay { order: 4; width: 100%; padding-top: 1px; text-align: left; }

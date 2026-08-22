@@ -51,4 +51,16 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
   expect(tabsBounds).not.toBeNull()
   expect(pickerBounds).not.toBeNull()
   expect(Math.abs((tabsBounds?.y ?? 0) - (pickerBounds?.y ?? 0))).toBeLessThan(8)
+
+  await page.getByRole('button', { name: 'Practice', exact: true }).click()
+  const practiceButtonBounds = await page.getByRole('button', { name: 'New random green' }).boundingBox()
+  const practiceTabsBounds = await page.getByRole('navigation', { name: 'Game mode' }).boundingBox()
+  expect(practiceButtonBounds).not.toBeNull()
+  expect(practiceTabsBounds).not.toBeNull()
+  expect(Math.abs((practiceTabsBounds?.y ?? 0) - (practiceButtonBounds?.y ?? 0))).toBeLessThan(8)
+
+  const firstRead = page.locator('.first-read')
+  await expect(firstRead).toBeVisible()
+  const firstReadBounds = await firstRead.boundingBox()
+  expect(firstReadBounds?.height).toBeLessThan(34)
 })

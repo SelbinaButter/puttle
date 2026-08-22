@@ -70,7 +70,7 @@ function idealLabel(solution?: PuzzleSolution): string | undefined {
   const line = degrees === 0
     ? 'straight'
     : `${Math.abs(degrees).toFixed(1)}\u00b0 ${degrees < 0 ? 'left' : 'right'}`
-  return `The line: ${line}, ${speedLabel(solution.ideal.speedIndex)}`
+  return `A makeable line: ${line}, ${speedLabel(solution.ideal.speedIndex)}`
 }
 
 export default function App() {
@@ -93,6 +93,7 @@ export default function App() {
   const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const [solution, setSolution] = useState<PuzzleSolution>()
   const [showResult, setShowResult] = useState(false)
+  const [showSolution, setShowSolution] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding())
   const [copied, setCopied] = useState(false)
@@ -162,6 +163,7 @@ export default function App() {
         setAnimation(undefined)
         setSolution(undefined)
         setShowResult(false)
+        setShowSolution(false)
         setCopied(false)
         setLoading(false)
       })
@@ -360,7 +362,7 @@ export default function App() {
         </button>
       </header>
 
-      <div className={`mode-switcher ${mode === 'archive' ? 'with-archive-picker' : ''}`}>
+      <div className={`mode-switcher ${mode !== 'daily' ? 'with-mode-action' : ''}`}>
         <nav className="mode-tabs" aria-label="Game mode">
           {(['daily', 'archive', 'practice'] as const).map((tab) => (
             <button type="button" className={mode === tab ? 'active' : ''} aria-pressed={mode === tab} onClick={() => changeMode(tab)} key={tab}>
@@ -376,9 +378,9 @@ export default function App() {
             <button type="button" aria-label="Next archived green" disabled={archiveIndex < 0 || archiveIndex >= availableDates.length - 2} onClick={() => moveArchive(1)}>→</button>
           </div>
         )}
-      </div>
 
-      {mode === 'practice' && <div className="mode-panel practice-panel"><span>Random archived green · doesn't affect your daily streak</span><button type="button" onClick={choosePracticePuzzle}>New random green</button></div>}
+        {mode === 'practice' && <div className="mode-panel practice-panel"><span>Random archived green · doesn't affect your daily streak</span><button type="button" onClick={choosePracticePuzzle}>New random green</button></div>}
+      </div>
 
       {error ? (
         <div className="error-card"><span className="eyebrow">Green unavailable</span><h2>That putt isn't ready.</h2><p>{error}</p><button type="button" onClick={() => changeMode('daily')}>Return to today</button></div>
@@ -408,9 +410,9 @@ export default function App() {
               animationKind={animation?.kind}
               activePath={animation?.result.path}
               animationTime={animation?.time}
-              revealPaths={solution?.paths ?? []}
-              idealPath={solution?.ideal?.path}
-              idealLabel={lineLabel}
+              revealPaths={[]}
+              idealPath={showSolution ? solution?.ideal?.path : undefined}
+              idealLabel={showSolution ? lineLabel : undefined}
               revealed={finished}
             />
             {finished && showResult && (
@@ -418,7 +420,7 @@ export default function App() {
                 <button className="win-close" type="button" aria-label="Close result" onClick={() => setShowResult(false)}>×</button>
                 <span className="eyebrow">{won ? 'Holed' : 'Round complete'}</span>
                 <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
-                <span className="muted">{solvingReveal ? 'Mapping the make window...' : lineLabel ?? 'No opening line found'}</span>
+                <span className="muted">Green revealed. Review your putts.</span>
                 {mode === 'daily' && <span className="countdown">Next green in {countdown}</span>}
                 <button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
                 <button className="text-button" type="button" onClick={() => setShowResult(false)}>View green</button>
@@ -426,7 +428,7 @@ export default function App() {
             )}
           </div>
 
-          {!finished && strokes.length === 0 && <div className="first-read"><b>Read the break from the approach.</b> The slope appears after the round.</div>}
+          {!finished && strokes.length === 0 && <div className="first-read"><b>Read the break from the approach.</b> Slope appears afterward.</div>}
 
           {!finished && lastStroke && (
             <div className={`stroke-feedback ${lastStroke.lipOut ? 'lip-out' : ''}`} role="status">
@@ -440,10 +442,19 @@ export default function App() {
               <div>
                 <span className="eyebrow">{won ? 'Holed \u00b7 Green revealed' : 'Five putts \u00b7 Green revealed'}</span>
                 <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
-                <span className="muted">{solvingReveal ? 'Mapping the make window...' : lineLabel}</span>
+                <span className="muted">{showSolution ? lineLabel : 'Review your putts on the green.'}</span>
                 {mode === 'daily' && <span className="countdown">Next green in {countdown}</span>}
               </div>
               <div className="result-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!solution?.ideal}
+                  aria-pressed={showSolution}
+                  onClick={() => setShowSolution((visible) => !visible)}
+                >
+                  {showSolution ? 'Hide solution line' : solvingReveal ? 'Finding a line…' : solution?.ideal ? 'Show a makeable line' : 'No solution found'}
+                </button>
                 {mode === 'practice' ? <button className="secondary-button" type="button" onClick={choosePracticePuzzle}>New green</button> : <>{mode !== 'archive' && <button className="secondary-button" type="button" onClick={() => changeMode('archive')}>Archive</button>}<button className="secondary-button" type="button" onClick={choosePracticePuzzle}>Practice</button></>}
                 <button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
               </div>
