@@ -64,3 +64,22 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
   const firstReadBounds = await firstRead.boundingBox()
   expect(firstReadBounds?.height).toBeLessThan(34)
 })
+
+test('mobile tutorial title stays on one line without overflowing', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/')
+
+  const title = page.getByRole('heading', { name: 'Read it. Roll it. Hole it.' })
+  await expect(title).toBeVisible()
+  const dimensions = await title.evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      lineCount: range.getClientRects().length,
+    }
+  })
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth)
+  expect(dimensions.lineCount).toBe(1)
+})

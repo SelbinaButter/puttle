@@ -4,6 +4,7 @@ import { puzzleFingerprint } from '../../src/game/storage'
 import { TEST_PUZZLE } from '../fixtures/puzzle'
 
 test('offers and scores a one-foot tap-in as the final stroke', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const puzzle = {
     ...TEST_PUZZLE,
@@ -48,7 +49,20 @@ test('offers and scores a one-foot tap-in as the final stroke', async ({ page })
   await expect(sliders.nth(1)).toBeDisabled()
   await tapIn.click()
 
-  await expect(page.getByRole('dialog', { name: 'Puzzle result' })).toContainText('2/5')
+  const result = page.getByRole('dialog', { name: 'Puzzle result' })
+  await expect(result).toContainText('2/5')
+  const reviewMessage = result.getByText('Green revealed. Review your putts.')
+  const messageDimensions = await reviewMessage.evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      lineCount: range.getClientRects().length,
+    }
+  })
+  expect(messageDimensions.scrollWidth).toBeLessThanOrEqual(messageDimensions.clientWidth)
+  expect(messageDimensions.lineCount).toBe(1)
   const savedRound = await page.evaluate(() => {
     const date = document.querySelector('footer')?.textContent?.match(/\d{4}-\d{2}-\d{2}/)?.[0]
     return date ? localStorage.getItem(`puttle:round:v1:${date}`) : null
