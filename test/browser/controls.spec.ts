@@ -32,3 +32,23 @@ test('canvas aiming and pace language work together', async ({ page }) => {
   await expect(page.getByText('Soft', { exact: true })).toBeVisible()
   await expect(page.getByText('Leave it short', { exact: true })).toHaveCount(0)
 })
+
+test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 402, height: 874 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => localStorage.setItem('puttle:onboarding:v1', 'seen'))
+  await page.goto('/')
+
+  const puttButton = page.getByRole('button', { name: 'Putt', exact: true })
+  await expect(puttButton).toBeVisible()
+  const buttonBounds = await puttButton.boundingBox()
+  expect(buttonBounds).not.toBeNull()
+  expect((buttonBounds?.y ?? Infinity) + (buttonBounds?.height ?? 0)).toBeLessThanOrEqual(874)
+
+  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  const tabsBounds = await page.getByRole('navigation', { name: 'Game mode' }).boundingBox()
+  const pickerBounds = await page.getByLabel('Archived green', { exact: true }).boundingBox()
+  expect(tabsBounds).not.toBeNull()
+  expect(pickerBounds).not.toBeNull()
+  expect(Math.abs((tabsBounds?.y ?? 0) - (pickerBounds?.y ?? 0))).toBeLessThan(8)
+})

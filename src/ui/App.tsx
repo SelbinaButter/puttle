@@ -390,21 +390,23 @@ export default function App() {
         </button>
       </header>
 
-      <nav className="mode-tabs" aria-label="Game mode">
-        {(['daily', 'archive', 'practice'] as const).map((tab) => (
-          <button type="button" className={mode === tab ? 'active' : ''} aria-pressed={mode === tab} onClick={() => changeMode(tab)} key={tab}>
-            {tab === 'daily' ? 'Today' : tab === 'archive' ? 'Archive' : 'Practice'}
-          </button>
-        ))}
-      </nav>
+      <div className={`mode-switcher ${mode === 'archive' ? 'with-archive-picker' : ''}`}>
+        <nav className="mode-tabs" aria-label="Game mode">
+          {(['daily', 'archive', 'practice'] as const).map((tab) => (
+            <button type="button" className={mode === tab ? 'active' : ''} aria-pressed={mode === tab} onClick={() => changeMode(tab)} key={tab}>
+              {tab === 'daily' ? 'Today' : tab === 'archive' ? 'Archive' : 'Practice'}
+            </button>
+          ))}
+        </nav>
 
-      {mode === 'archive' && (
-        <div className="mode-panel archive-picker">
-          <button type="button" aria-label="Previous archived green" disabled={archiveIndex <= 0} onClick={() => moveArchive(-1)}>←</button>
-          <label><span>Archived green</span><select value={selectedDate} onChange={(event) => { beginLoad(); setSelectedDate(event.target.value) }}>{availableDates.filter((date) => date < today).map((date) => <option value={date} key={date}>{date}</option>)}</select></label>
-          <button type="button" aria-label="Next archived green" disabled={archiveIndex < 0 || archiveIndex >= availableDates.length - 2} onClick={() => moveArchive(1)}>→</button>
-        </div>
-      )}
+        {mode === 'archive' && (
+          <div className="mode-panel archive-picker">
+            <button type="button" aria-label="Previous archived green" disabled={archiveIndex <= 0} onClick={() => moveArchive(-1)}>←</button>
+            <label><span>Archived green</span><select aria-label="Archived green" value={selectedDate} onChange={(event) => { beginLoad(); setSelectedDate(event.target.value) }}>{availableDates.filter((date) => date < today).map((date) => <option value={date} key={date}>{date}</option>)}</select></label>
+            <button type="button" aria-label="Next archived green" disabled={archiveIndex < 0 || archiveIndex >= availableDates.length - 2} onClick={() => moveArchive(1)}>→</button>
+          </div>
+        )}
+      </div>
 
       {mode === 'practice' && <div className="mode-panel practice-panel"><span>Random archived green · doesn't affect your daily streak</span><button type="button" onClick={choosePracticePuzzle}>New random green</button></div>}
 
@@ -486,7 +488,7 @@ export default function App() {
             )}
           </div>
 
-          {!finished && strokes.length === 0 && <div className="first-read"><b>Watch the approach to read the break.</b> The slope remains hidden until the round ends.</div>}
+          {!finished && strokes.length === 0 && <div className="first-read"><b>Read the break from the approach.</b> The slope appears after the round.</div>}
 
           {!finished && lastStroke && (
             <div className={`stroke-feedback ${lastStroke.lipOut ? 'lip-out' : ''}`} role="status">

@@ -25,6 +25,7 @@ button:disabled { cursor: default; opacity: .5; }
 .stats-button span { padding: 8px 11px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; }
 .stats-button:hover span { border-color: rgba(255,255,255,.24); }
 .stats-button b { color: #fff; }
+.mode-switcher { display: block; }
 .mode-tabs { display: flex; width: fit-content; margin: -4px 0 14px; padding: 4px; gap: 3px; border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(7,24,15,.45); }
 .mode-tabs button { padding: 7px 15px; color: #8da392; border: 0; border-radius: 999px; background: transparent; font-size: .74rem; font-weight: 750; }
 .mode-tabs button:hover { color: #eef4df; }
@@ -124,23 +125,36 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
 .histogram-row > span { display: block; min-width: 26px; padding: 4px 7px; color: #172419; background: #d9dd94; text-align: right; font-weight: 850; }
 
 @media (max-width: 680px) {
-  .shell { width: min(100% - 16px, 920px); padding-top: 16px; }
-  .topbar { align-items: center; margin-bottom: 13px; }
-  .topbar h1 { font-size: 2.8rem; }
-  .stats-button { gap: 5px; flex-direction: column; }
-  .stats-button span { padding: 4px 9px; font-size: .68rem; }
-  .mode-tabs { margin-bottom: 10px; }
-  .mode-panel { margin-bottom: 10px; }
-  .archive-picker { width: 100%; justify-content: space-between; }
+  .shell { width: min(100% - 16px, 920px); padding-top: max(8px, env(safe-area-inset-top)); }
+  .topbar { align-items: center; margin-bottom: 9px; }
+  .topbar h1 { margin-top: 1px; font-size: 2.2rem; line-height: .95; }
+  .topbar .eyebrow { font-size: .58rem; }
+  .stats-button { gap: 4px; flex-direction: row; }
+  .stats-button span { padding: 4px 7px; font-size: .62rem; }
+  .mode-switcher { margin-bottom: 8px; }
+  .mode-switcher.with-archive-picker { display: flex; align-items: center; gap: 7px; }
+  .mode-tabs { margin: 0; padding: 3px; }
+  .mode-tabs button { padding: 6px 11px; font-size: .68rem; }
+  .mode-panel { min-height: 0; margin-bottom: 8px; }
+  .mode-switcher .archive-picker { width: auto; margin: 0 0 0 auto; padding: 3px; gap: 0; }
+  .archive-picker > button { display: none; }
   .archive-picker label span { display: none; }
+  .archive-picker select { width: 126px; padding: 6px 7px; font-size: .67rem; }
   .practice-panel { align-items: stretch; flex-direction: column; }
   .game-card { border-radius: 16px; }
-  .readout-row { gap: 8px; padding: 11px 12px; font-size: .68rem; flex-wrap: wrap; }
-  .canvas-wrap { height: 52vh; min-height: 350px; }
-  .controls { grid-template-columns: 1fr; gap: 15px; padding: 16px; }
+  .readout-row { gap: 6px 8px; padding: 8px 11px; font-size: .64rem; flex-wrap: wrap; }
+  .approach-replay { order: 4; width: 100%; padding-top: 1px; text-align: left; }
+  .canvas-wrap { height: clamp(300px, 39svh, 340px); min-height: 0; }
+  .first-read { padding: 8px 12px; font-size: .68rem; line-height: 1.35; }
+  .controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 11px 9px; padding: 12px; }
+  .controls label > span { margin-bottom: 4px; font-size: .72rem; }
+  .controls label > span b i { display: none; }
+  .controls small { font-size: .54rem; }
+  .slider-stepper { grid-template-columns: 30px minmax(0, 1fr) 30px; gap: 4px; }
+  .slider-stepper button { width: 30px; height: 30px; }
   .stroke-actions { width: 100%; }
-  .putt-button, .tap-in-button { width: 100%; }
-  .first-read { padding: 11px 16px; }
+  .controls .stroke-actions { grid-column: 1 / -1; }
+  .putt-button, .tap-in-button { width: 100%; padding-block: 11px; }
   .stroke-feedback { padding: 10px 16px; align-items: flex-start; flex-direction: column; gap: 2px; }
   .result-panel { align-items: stretch; flex-direction: column; gap: 13px; }
   .result-panel button { width: 100%; }
@@ -151,8 +165,15 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
 }
 
 @media (max-width: 480px) {
-  .controls { grid-template-columns: 1fr; }
-  .approach-replay { order: 4; width: 100%; padding-top: 3px; text-align: left; }
   .stats-summary { gap: 3px; }
   .stats-card { padding: 24px 18px; }
+}
+
+@media (max-width: 360px) {
+  .mode-tabs button { padding-inline: 8px; }
+  .archive-picker select { width: 112px; }
+}
+
+@media (max-width: 680px) and (max-height: 700px) {
+  .canvas-wrap { height: 265px; }
 }
