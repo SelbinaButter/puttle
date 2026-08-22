@@ -56,6 +56,7 @@ test('Stimp help explains the reading without moving it off center', async ({ pa
   await expect(tooltip).toBeVisible()
   await expect(tooltip).toContainText('distance, in feet')
   await expect(tooltip).toContainText('higher numbers are faster')
+  expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true)
 })
 
 test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }) => {
@@ -75,6 +76,14 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
   const readoutCenter = (readoutBounds?.x ?? 0) + (readoutBounds?.width ?? 0) / 2
   const greenSpeedCenter = (greenSpeedBounds?.x ?? 0) + (greenSpeedBounds?.width ?? 0) / 2
   expect(Math.abs(greenSpeedCenter - readoutCenter)).toBeLessThanOrEqual(0.5)
+
+  await page.getByRole('button', { name: 'What is Stimp?' }).click()
+  const tooltipBounds = await page.getByRole('tooltip').boundingBox()
+  expect(tooltipBounds).not.toBeNull()
+  expect(tooltipBounds?.x).toBeGreaterThanOrEqual(16)
+  expect((tooltipBounds?.x ?? 0) + (tooltipBounds?.width ?? Infinity)).toBeLessThanOrEqual(402 - 16)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('tooltip')).toBeHidden()
 
   const footerGuidanceBounds = await page.locator('.footer-guidance').boundingBox()
   const footerLocalBounds = await page.locator('.footer-local').boundingBox()

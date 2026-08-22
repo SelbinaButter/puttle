@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   AIM_COUNT,
   SPEED_COUNT,
@@ -41,6 +42,100 @@ interface Animation {
 
 interface PuzzleIndex {
   dates: string[]
+}
+
+interface TooltipPosition {
+  arrowLeft: number
+  left: number
+  top: number
+  width: number
+}
+
+function StimpReadout({ stimp }: { stimp: number }) {
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState<TooltipPosition>()
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const placeTooltip = () => {
+      const button = buttonRef.current
+      if (!button) return
+      const buttonBounds = button.getBoundingClientRect()
+      const width = Math.min(310, window.innerWidth - 32)
+      const anchorCenter = buttonBounds.left + buttonBounds.width / 2
+      const left = Math.min(
+        window.innerWidth - 16 - width / 2,
+        Math.max(16 + width / 2, anchorCenter),
+      )
+      setPosition({
+        arrowLeft: anchorCenter - (left - width / 2),
+        left,
+        top: buttonBounds.bottom + 10,
+        width,
+      })
+    }
+
+    placeTooltip()
+    window.addEventListener('resize', placeTooltip)
+    window.addEventListener('scroll', placeTooltip, true)
+    return () => {
+      window.removeEventListener('resize', placeTooltip)
+      window.removeEventListener('scroll', placeTooltip, true)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!buttonRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePress)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  return (
+    <span className="stimp-readout">
+      <span>Green speed · {stimp.toFixed(1)} Stimp</span>
+      <span className="stimp-help">
+        <button
+          ref={buttonRef}
+          className="stimp-help-button"
+          type="button"
+          aria-label="What is Stimp?"
+          aria-describedby={open ? 'stimp-tooltip' : undefined}
+          onClick={() => setOpen(true)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => { if (document.activeElement !== buttonRef.current) setOpen(false) }}
+        >?</button>
+      </span>
+      {open && position && createPortal(
+        <span
+          className="stimp-tooltip"
+          id="stimp-tooltip"
+          role="tooltip"
+          style={{ left: position.left, top: position.top, width: position.width }}
+        >
+          <span className="stimp-tooltip-arrow" style={{ left: position.arrowLeft }} aria-hidden="true" />
+          Stimp is the distance, in feet, a ball rolls on a level green when released from a standard Stimpmeter. A 10.0 reading means about 10 feet in that test; higher numbers are faster, so putts roll farther and feel more influence from the slope.
+        </span>,
+        document.body,
+      )}
+    </span>
+  )
 }
 
 function randomIndex(length: number): number {
@@ -401,15 +496,7 @@ export default function App() {
         <section className="game-card">
           <div className="readout-row">
             <span className="readout-distance">{formatFeet(distance)} to cup</span>
-            <span className="stimp-readout">
-              <span>Green speed · {puzzle.stimp.toFixed(1)} Stimp</span>
-              <span className="stimp-help">
-                <button className="stimp-help-button" type="button" aria-label="What is Stimp?" aria-describedby="stimp-tooltip">?</button>
-                <span className="stimp-tooltip" id="stimp-tooltip" role="tooltip">
-                  Stimp is the distance, in feet, a ball rolls on a level green when released from a standard Stimpmeter. A 10.0 reading means about 10 feet in that test; higher numbers are faster, so putts roll farther and feel more influence from the slope.
-                </span>
-              </span>
-            </span>
+            <StimpReadout stimp={puzzle.stimp} />
             <div className="readout-actions">
               {strokes.length === 0 && !finished && <button className="result-reopen approach-replay" type="button" disabled={animation?.kind === 'approach'} onClick={playApproach}>Watch approach again</button>}
               {finished && !showResult ? <button className="result-reopen readout-status" type="button" onClick={() => setShowResult(true)}>View result</button> : <span className="readout-status">Putt {finished ? strokes.length : strokes.length + 1}/{MAX_PUTTS}</span>}
