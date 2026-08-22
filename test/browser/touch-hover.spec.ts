@@ -55,6 +55,11 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   const resultPanelAfterClose = await page.locator('.result-panel').boundingBox()
   expect(resultPanelAfterClose?.y).toBe(resultPanelWhileOpen?.y)
   expect(resultPanelAfterClose?.height).toBe(resultPanelWhileOpen?.height)
+  const scoreBounds = await page.locator('.result-panel strong').boundingBox()
+  const reviewCopyBounds = await page.locator('.result-panel .muted').boundingBox()
+  const scoreToCopyGap = (reviewCopyBounds?.x ?? Infinity) - ((scoreBounds?.x ?? 0) + (scoreBounds?.width ?? 0))
+  expect(scoreToCopyGap).toBeGreaterThanOrEqual(7)
+  expect(scoreToCopyGap).toBeLessThanOrEqual(9)
 
   await expect(page.locator('.result-panel .result-nav-action').first()).toBeHidden()
   const resultPanelBounds = await page.locator('.result-panel').boundingBox()

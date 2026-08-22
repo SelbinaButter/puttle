@@ -81,6 +81,7 @@ input[type="range"] { width: 100%; accent-color: #e8d970; }
 .countdown { color: #cbd7c8; font-size: .72rem; font-variant-numeric: tabular-nums; }
 .muted { color: #97aa9d; font-size: .78rem; }
 footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7rem; }
+.local-clock { font-variant-numeric: tabular-nums; }
 .loader { color: #bed395; letter-spacing: .08em; }
 .game-loader { display: grid; min-height: 460px; place-items: center; border: 1px solid rgba(255,255,255,.1); border-radius: 20px; background: rgba(7,24,15,.4); }
 .error-card { max-width: 480px; padding: 30px; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; background: rgba(0,0,0,.15); }
@@ -157,6 +158,7 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .putt-button, .tap-in-button { width: 100%; padding-block: 11px; }
   .stroke-feedback { padding: 10px 16px; align-items: flex-start; flex-direction: column; gap: 2px; }
   .result-panel { min-height: 0; padding: 12px; align-items: stretch; flex-direction: column; gap: 10px; }
+  .result-panel > div:first-child { grid-template-columns: max-content minmax(0, 1fr); column-gap: 8px; }
   .result-panel button { width: 100%; min-width: 0; padding: 10px 8px; font-size: .68rem; }
   .result-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
   .result-actions .result-nav-action { display: none; }

@@ -61,6 +61,7 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
 
   const firstRead = page.locator('.first-read')
   await expect(firstRead).toBeVisible()
+  await expect(firstRead).toHaveText('Read the break from the approach.')
   const firstReadBounds = await firstRead.boundingBox()
   expect(firstReadBounds?.height).toBeLessThan(34)
 })

@@ -10,7 +10,7 @@ test('an archive deep link opens the specified green', async ({ page }) => {
 
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.archive-picker select')).toHaveValue(archiveDate)
-  await expect(page.locator('footer')).toContainText(`Local date ${archiveDate}`)
+  await expect(page.locator('footer')).toHaveText('The slope stays hidden until the round ends.')
   await expect(page).toHaveURL(new RegExp(`archive=${archiveDate}$`))
 })
 
@@ -27,6 +27,8 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   await page.goto('/')
   await page.getByRole('button', { name: "Play today's green" }).click()
   await expect(page.getByRole('heading', { name: 'Puttle' })).toBeVisible()
+  await expect(page.locator('footer')).toContainText('Local date')
+  await expect(page.locator('footer')).toContainText(/Local time \d{2}:\d{2}:\d{2}/)
   const today = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]
   expect(today).toBeDefined()
 
@@ -36,10 +38,12 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   await expect(page.locator(`.archive-picker option[value="${futureDate}"]`)).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Next archived green' })).toBeDisabled()
   await expect(page.locator('.game-card')).toBeVisible()
+  await expect(page.locator('footer')).toHaveText('The slope stays hidden until the round ends.')
 
   await page.getByRole('button', { name: 'Practice' }).click()
   await expect(page.getByText(/doesn't affect your daily streak/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'New random green' })).toBeVisible()
+  await expect(page.locator('footer')).toHaveText('The slope stays hidden until the round ends.')
 
   await page.getByRole('button', { name: 'Today' }).click()
   const date = (await page.locator('footer').innerText()).match(/\d{4}-\d{2}-\d{2}/)?.[0]

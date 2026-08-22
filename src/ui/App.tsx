@@ -59,6 +59,13 @@ function midnightCountdown(): string {
   return [hours, minutes, remainder].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
+function localClock(): string {
+  const now = new Date()
+  return [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':')
+}
+
 function speedLabel(index: number): string {
   const feet = speedPastFeet(index)
   return feet < 0 ? `${Math.abs(feet).toFixed(1)} ft short` : `${feet.toFixed(1)} ft past`
@@ -98,6 +105,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding())
   const [copied, setCopied] = useState(false)
   const [countdown, setCountdown] = useState(midnightCountdown)
+  const [localTime, setLocalTime] = useState(localClock)
   const [appBaseUrl] = useState(() => new URL(import.meta.env.BASE_URL, window.location.href).href)
   const frame = useRef<number>()
 
@@ -127,7 +135,10 @@ export default function App() {
   }, [mode])
 
   useEffect(() => {
-    const timer = window.setInterval(() => setCountdown(midnightCountdown()), 1000)
+    const timer = window.setInterval(() => {
+      setCountdown(midnightCountdown())
+      setLocalTime(localClock())
+    }, 1000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -428,7 +439,7 @@ export default function App() {
             )}
           </div>
 
-          {!finished && strokes.length === 0 && <div className="first-read"><b>Read the break from the approach.</b> Slope appears afterward.</div>}
+          {!finished && strokes.length === 0 && <div className="first-read"><b>Read the break from the approach.</b></div>}
 
           {!finished && lastStroke && (
             <div className={`stroke-feedback ${lastStroke.lipOut ? 'lip-out' : ''}`} role="status">
@@ -479,7 +490,10 @@ export default function App() {
         </section>
       )}
 
-      <footer>The slope stays hidden until the round ends. Every trace is part of your read. · Local date {selectedDate}</footer>
+      <footer>
+        The slope stays hidden until the round ends.
+        {mode === 'daily' && <> · Local date {today} · Local time <span className="local-clock">{localTime}</span></>}
+      </footer>
 
       {showOnboarding && (
         <div className="intro-backdrop"><section className="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title"><span className="eyebrow">How to play</span><h2 id="intro-title">Read it. Roll it. Hole it.</h2><ol><li><b>1</b><span><strong>Watch the approach</strong>See how the ball releases across the green before your first putt.</span></li><li><b>2</b><span><strong>Choose line and pace</strong>Aim left or right, then choose whether the ball should finish short or roll past on a flat green.</span></li><li><b>3</b><span><strong>Finish in five</strong>Every trace adds information. Inside one foot, a safe tap-in adds the final stroke.</span></li></ol><button type="button" onClick={closeOnboarding}>Play today's green</button></section></div>
