@@ -45,6 +45,12 @@ test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }
   expect(buttonBounds).not.toBeNull()
   expect((buttonBounds?.y ?? Infinity) + (buttonBounds?.height ?? 0)).toBeLessThanOrEqual(874)
 
+  const readoutBounds = await page.locator('.readout-row').boundingBox()
+  const greenSpeedBounds = await page.locator('.readout-row > :nth-child(2)').boundingBox()
+  const readoutCenter = (readoutBounds?.x ?? 0) + (readoutBounds?.width ?? 0) / 2
+  const greenSpeedCenter = (greenSpeedBounds?.x ?? 0) + (greenSpeedBounds?.width ?? 0) / 2
+  expect(Math.abs(greenSpeedCenter - readoutCenter)).toBeLessThanOrEqual(0.5)
+
   const footerGuidanceBounds = await page.locator('.footer-guidance').boundingBox()
   const footerLocalBounds = await page.locator('.footer-local').boundingBox()
   expect(footerLocalBounds?.y).toBeGreaterThanOrEqual(

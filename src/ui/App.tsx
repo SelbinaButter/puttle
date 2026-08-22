@@ -400,7 +400,7 @@ export default function App() {
       ) : (
         <section className="game-card">
           <div className="readout-row">
-            <span><i className="status-dot" /> {formatFeet(distance)} to cup</span>
+            <span>{formatFeet(distance)} to cup</span>
             <span title="Stimpmeter green-speed rating. Higher numbers roll faster and farther.">Green speed · {puzzle.stimp.toFixed(1)} Stimp</span>
             {strokes.length === 0 && !finished && <button className="result-reopen approach-replay" type="button" disabled={animation?.kind === 'approach'} onClick={playApproach}>Watch approach again</button>}
             {finished && !showResult ? <button className="result-reopen" type="button" onClick={() => setShowResult(true)}>View result</button> : <span>Putt {finished ? strokes.length : strokes.length + 1}/{MAX_PUTTS}</span>}

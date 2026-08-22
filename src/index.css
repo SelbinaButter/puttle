@@ -39,7 +39,6 @@ button:disabled { cursor: default; opacity: .5; }
 .readout-row { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 13px 18px; color: #c9d8c5; border-bottom: 1px solid rgba(255,255,255,.09); font-size: .78rem; }
 .result-reopen { padding: 0; color: #eadf87; border: 0; background: transparent; font-size: inherit; font-weight: 750; }
 .approach-replay { color: #b9d6c6; }
-.status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: #e6d36c; box-shadow: 0 0 10px #e6d36c; }
 .canvas-wrap { position: relative; height: clamp(390px, 61vw, 590px); background: #345c3b; }
 .green-canvas { display: block; width: 100%; height: 100%; }
 .green-canvas.aiming { cursor: crosshair; touch-action: none; }
@@ -142,8 +141,11 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .mode-switcher .practice-panel span { display: none; }
   .mode-switcher .practice-panel button { padding: 6px 8px; font-size: .67rem; white-space: nowrap; }
   .game-card { border-radius: 16px; }
-  .readout-row { gap: 6px 8px; padding: 8px 11px; font-size: .64rem; flex-wrap: wrap; }
-  .approach-replay { order: 4; width: 100%; padding-top: 1px; text-align: left; }
+  .readout-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px 8px; padding: 8px 11px; font-size: .64rem; }
+  .readout-row > :first-child { grid-column: 1; grid-row: 1; justify-self: start; }
+  .readout-row > :nth-child(2) { grid-column: 2; grid-row: 1; justify-self: center; }
+  .readout-row > :last-child { grid-column: 3; grid-row: 1; justify-self: end; }
+  .approach-replay { width: 100%; padding-top: 1px; text-align: left; grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
   .canvas-wrap { height: clamp(300px, 39svh, 340px); min-height: 0; }
   .review-controls { display: none; }
   .first-read { padding: 8px 12px; font-size: .68rem; line-height: 1.35; }
