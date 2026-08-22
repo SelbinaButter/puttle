@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aimIndexFromDrag, aimIndexFromPoints } from '../../src/game/aim'
+import { aimIndexFromDrag, aimIndexFromPoints, speedIndexFromDrag } from '../../src/game/aim'
 
 describe('direct aim input', () => {
   const ball = { x: 0, y: 0 }
@@ -31,5 +31,12 @@ describe('direct aim input', () => {
   it('clamps relative dragging to the canonical range', () => {
     expect(aimIndexFromDrag(30, 1_000, 4)).toBe(60)
     expect(aimIndexFromDrag(30, -1_000, 4)).toBe(0)
+  })
+
+  it('turns forward and back movement into canonical pace steps', () => {
+    expect(speedIndexFromDrag(10, 7, 8)).toBe(11)
+    expect(speedIndexFromDrag(10, -12, 8)).toBe(9)
+    expect(speedIndexFromDrag(10, 1_000, 8)).toBe(30)
+    expect(speedIndexFromDrag(10, -1_000, 8)).toBe(0)
   })
 })

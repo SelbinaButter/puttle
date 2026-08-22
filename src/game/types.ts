@@ -10,6 +10,7 @@ export interface PlayedStroke {
   lipOut: boolean
   elapsed: number
   path: PathPoint[]
+  tapIn?: boolean
 }
 
 export interface SavedRound {

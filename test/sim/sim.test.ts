@@ -3,6 +3,7 @@ import {
   FIXED_DT,
   GRAVITY_FTPS2,
   rollingAcceleration,
+  solvePuzzle,
   simulateRoll,
   simulatePutt,
   type PuzzleDefinition,
@@ -71,6 +72,19 @@ describe('putting simulation', () => {
     const result = simulatePutt(TEST_PUZZLE, start, 30, 0)
     expect(Number.isFinite(result.final.x)).toBe(true)
     expect(Number.isFinite(result.final.y)).toBe(true)
+  })
+
+  it('finds a best make from each recorded stroke position', () => {
+    const secondStart = { x: TEST_PUZZLE.hole.x - 5, y: TEST_PUZZLE.hole.y + 1 }
+    const solution = solvePuzzle(TEST_PUZZLE, [TEST_PUZZLE.ball, secondStart])
+
+    expect(solution.strokeIdeals).toHaveLength(2)
+    solution.strokeIdeals.forEach((ideal, index) => {
+      expect(ideal).not.toBeNull()
+      const start = index === 0 ? TEST_PUZZLE.ball : secondStart
+      expect(simulatePutt(TEST_PUZZLE, start, ideal!.aimIndex, ideal!.speedIndex).holed).toBe(true)
+      expect(ideal!.path[0]).toMatchObject(start)
+    })
   })
 
   it('captures a centered four-footer at one-foot-past pace on a downhill slope', () => {

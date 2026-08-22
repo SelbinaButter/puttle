@@ -1,6 +1,11 @@
 import { solvePuzzle } from './solve'
-import type { PuzzleDefinition } from './types'
+import type { PuzzleDefinition, Vec2 } from './types'
 
-self.onmessage = (event: MessageEvent<PuzzleDefinition>) => {
-  self.postMessage(solvePuzzle(event.data))
+interface SolveRequest {
+  puzzle: PuzzleDefinition
+  strokeStarts: Vec2[]
+}
+
+self.onmessage = (event: MessageEvent<SolveRequest>) => {
+  self.postMessage(solvePuzzle(event.data.puzzle, event.data.strokeStarts))
 }

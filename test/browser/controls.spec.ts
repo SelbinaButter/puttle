@@ -12,6 +12,8 @@ test('canvas aiming and pace language work together', async ({ page }) => {
   if (!bounds) return
 
   const aimOutput = page.locator('.controls label').first().locator('output')
+  const paceSlider = page.locator('.controls input[type="range"]').nth(1)
+  const startingPace = await paceSlider.inputValue()
   const observed = new Set<string>()
   for (const [xRatio, yRatio] of [[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8]]) {
     await page.mouse.click(bounds.x + bounds.width * xRatio, bounds.y + bounds.height * yRatio)
@@ -24,6 +26,7 @@ test('canvas aiming and pace language work together', async ({ page }) => {
   await page.mouse.up()
   observed.add(await aimOutput.innerText())
   expect(observed.size).toBeGreaterThan(1)
+  await expect(paceSlider).not.toHaveValue(startingPace)
 
   await expect(page.getByText('flat-green finish')).toBeVisible()
   await expect(page.getByText('Soft', { exact: true })).toBeVisible()

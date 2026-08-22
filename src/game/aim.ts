@@ -1,4 +1,10 @@
-import { AIM_COUNT, AIM_MIN_DEGREES, AIM_STEP_DEGREES, type Vec2 } from '../sim'
+import {
+  AIM_COUNT,
+  AIM_MIN_DEGREES,
+  AIM_STEP_DEGREES,
+  SPEED_COUNT,
+  type Vec2,
+} from '../sim'
 
 export function aimIndexFromPoints(ball: Vec2, hole: Vec2, pointer: Vec2): number | undefined {
   const straightX = hole.x - ball.x
@@ -29,4 +35,14 @@ export function aimIndexFromDrag(
     perpendicularPixels / pixelsPerDegree / AIM_STEP_DEGREES,
   )
   return Math.max(0, Math.min(AIM_COUNT - 1, startIndex + indexDelta))
+}
+
+export function speedIndexFromDrag(
+  startIndex: number,
+  forwardPixels: number,
+  pixelsPerStep: number,
+): number {
+  if (pixelsPerStep <= 0) return startIndex
+  const indexDelta = Math.round(forwardPixels / pixelsPerStep)
+  return Math.max(0, Math.min(SPEED_COUNT - 1, startIndex + indexDelta))
 }

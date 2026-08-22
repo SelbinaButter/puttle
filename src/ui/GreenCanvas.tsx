@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
 import { heightAt, puttInput, sampleSurface, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
-import { aimIndexFromDrag, aimIndexFromPoints } from '../game/aim'
+import { aimIndexFromDrag, aimIndexFromPoints, speedIndexFromDrag } from '../game/aim'
 import type { PlayedStroke } from '../game/types'
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   speedIndex: number
   aimEnabled: boolean
   onAimIndexChange: (index: number) => void
+  onSpeedIndexChange: (index: number) => void
   approachPath: PathPoint[]
   approachTrailUntil?: number
   animationKind?: 'approach' | 'putt'
@@ -19,6 +20,7 @@ interface Props {
   revealPaths: PathPoint[][]
   idealPath?: PathPoint[]
   idealLabel?: string
+  highlightedStrokeIndex?: number
   revealed: boolean
 }
 
@@ -48,6 +50,8 @@ interface AimDrag {
   pointerId: number
   start: Vec2
   startIndex: number
+  startSpeedIndex: number
+  startRadius: number
   pixelRatio: number
   relative: boolean
 }
@@ -458,10 +462,24 @@ export function GreenCanvas(props: Props) {
     for (const path of props.revealPaths) {
       drawPath(context, path, transform, 'rgba(239, 224, 129, .18)', 3 * ratio)
     }
+    const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
     props.strokes.forEach((stroke, index) => {
-      const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
+      if (index === props.highlightedStrokeIndex) return
       drawPath(context, stroke.path, transform, palette[index % palette.length], 2.25 * ratio)
     })
+    const highlightedStrokeIndex = props.highlightedStrokeIndex
+    const highlightedStroke = highlightedStrokeIndex === undefined
+      ? undefined
+      : props.strokes[highlightedStrokeIndex]
+    if (highlightedStroke && highlightedStrokeIndex !== undefined) {
+      drawPath(
+        context,
+        highlightedStroke.path,
+        transform,
+        palette[highlightedStrokeIndex % palette.length],
+        4 * ratio,
+      )
+    }
     if (props.idealPath) {
       drawPath(context, props.idealPath, transform, '#fff09a', 4.5 * ratio)
       const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]
@@ -485,10 +503,9 @@ export function GreenCanvas(props: Props) {
     )
     if (!props.activePath && !props.revealed && props.animationKind !== 'approach') {
       const start = screen(props.ball, transform)
-      const guideLength = Math.min(
-        12,
-        Math.max(input.distance + 1.5, (120 * ratio) / transform.scale),
-      )
+      // The guide is a deterministic flat-green finish marker. Its endpoint
+      // tracks the same half-foot pace increments as the slider.
+      const guideLength = Math.max(0, input.distance + input.pastFeet)
       const end = screen(
         {
           x: props.ball.x + input.direction.x * guideLength,
@@ -593,6 +610,30 @@ export function GreenCanvas(props: Props) {
     ))
   }
 
+  const updateSpeedFromPointer = (drag: AimDrag, pixel: Vec2) => {
+    const transform = transformRef.current
+    if (!transform) return
+    const ball = screen(props.ball, transform)
+    let forwardPixels: number
+    if (drag.relative) {
+      const hole = screen(props.puzzle.hole, transform)
+      const straightX = hole.x - ball.x
+      const straightY = hole.y - ball.y
+      const straightLength = Math.hypot(straightX, straightY)
+      if (straightLength === 0) return
+      forwardPixels =
+        ((straightX / straightLength) * (pixel.x - drag.start.x)) +
+        ((straightY / straightLength) * (pixel.y - drag.start.y))
+    } else {
+      forwardPixels = Math.hypot(pixel.x - ball.x, pixel.y - ball.y) - drag.startRadius
+    }
+    props.onSpeedIndexChange(speedIndexFromDrag(
+      drag.startSpeedIndex,
+      forwardPixels,
+      8 * drag.pixelRatio,
+    ))
+  }
+
   const actualReviewCenter = (): Vec2 => {
     const transform = transformRef.current
     return transform
@@ -642,6 +683,8 @@ export function GreenCanvas(props: Props) {
         pointerId: event.pointerId,
         start: pixel,
         startIndex: props.aimIndex,
+        startSpeedIndex: props.speedIndex,
+        startRadius: ballPixel ? Math.hypot(pixel.x - ballPixel.x, pixel.y - ballPixel.y) : 0,
         pixelRatio,
         relative,
       }
@@ -664,6 +707,7 @@ export function GreenCanvas(props: Props) {
       const pixel = pointerPosition(event)
       if (drag.relative) updateRelativeAim(drag, pixel)
       else updateAimFromPointer(pixel)
+      updateSpeedFromPointer(drag, pixel)
       return
     }
     if (!props.revealed || !pointers.current.has(event.pointerId)) return
@@ -703,7 +747,7 @@ export function GreenCanvas(props: Props) {
       <canvas
         ref={canvasRef}
         className={`green-canvas ${props.revealed ? 'reviewing' : props.aimEnabled ? 'aiming' : ''}`}
-        aria-label={props.aimEnabled ? 'Putting green. Click or drag to aim.' : 'Putting green'}
+        aria-label={props.aimEnabled ? 'Putting green. Drag sideways to aim and forward or back to set pace.' : 'Putting green'}
         data-camera-mode={props.revealed && reviewCamera.zoom > 1
           ? 'review'
           : usesCloseCamera(props.puzzle, props.ball, !props.revealed && props.animationKind !== 'approach') ? 'close' : 'full'}

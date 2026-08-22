@@ -73,6 +73,8 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
 
   const result = page.getByRole('dialog', { name: 'Puzzle result' })
   await expect(result).toBeVisible({ timeout: 15_000 })
+  await expect(result.getByLabel('Stroke recap')).toContainText('Played')
+  await expect(result.getByLabel('Stroke recap')).toContainText('Best')
   await result.getByRole('button', { name: 'View green', exact: true }).click()
   await expect(result).toBeHidden()
   await expect(page.locator('.result-panel')).toContainText('Green revealed')
