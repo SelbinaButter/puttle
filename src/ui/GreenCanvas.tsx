@@ -20,7 +20,6 @@ interface Props {
   revealPaths: PathPoint[][]
   idealPath?: PathPoint[]
   idealLabel?: string
-  highlightedStrokeIndex?: number
   revealed: boolean
 }
 
@@ -462,24 +461,10 @@ export function GreenCanvas(props: Props) {
     for (const path of props.revealPaths) {
       drawPath(context, path, transform, 'rgba(239, 224, 129, .18)', 3 * ratio)
     }
-    const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
     props.strokes.forEach((stroke, index) => {
-      if (index === props.highlightedStrokeIndex) return
+      const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
       drawPath(context, stroke.path, transform, palette[index % palette.length], 2.25 * ratio)
     })
-    const highlightedStrokeIndex = props.highlightedStrokeIndex
-    const highlightedStroke = highlightedStrokeIndex === undefined
-      ? undefined
-      : props.strokes[highlightedStrokeIndex]
-    if (highlightedStroke && highlightedStrokeIndex !== undefined) {
-      drawPath(
-        context,
-        highlightedStroke.path,
-        transform,
-        palette[highlightedStrokeIndex % palette.length],
-        4 * ratio,
-      )
-    }
     if (props.idealPath) {
       drawPath(context, props.idealPath, transform, '#fff09a', 4.5 * ratio)
       const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]

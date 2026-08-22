@@ -7,7 +7,6 @@ import {
   simulateRoll,
   speedPastFeet,
   type PuzzleDefinition,
-  type IdealPutt,
   type PuzzleSolution,
   type PuttResult,
 } from '../sim'
@@ -65,30 +64,13 @@ function speedLabel(index: number): string {
   return feet < 0 ? `${Math.abs(feet).toFixed(1)} ft short` : `${feet.toFixed(1)} ft past`
 }
 
-function aimLabel(index: number): string {
-  const degrees = aimDegrees(index)
-  return degrees === 0
-    ? 'straight'
-    : `${Math.abs(degrees).toFixed(1)}\u00b0 ${degrees < 0 ? 'left' : 'right'}`
-}
-
-function puttInputLabel(putt: Pick<IdealPutt, 'aimIndex' | 'speedIndex'>): string {
-  return `${aimLabel(putt.aimIndex)} \u00b7 ${speedLabel(putt.speedIndex)}`
-}
-
-function isAutomaticTapIn(stroke: PlayedStroke, puzzle: PuzzleDefinition): boolean {
-  const finalPoint = stroke.path.at(-1)
-  return stroke.tapIn === true || Boolean(
-    stroke.holed &&
-    stroke.path.length === 2 &&
-    finalPoint?.x === puzzle.hole.x &&
-    finalPoint.y === puzzle.hole.y,
-  )
-}
-
 function idealLabel(solution?: PuzzleSolution): string | undefined {
   if (!solution?.ideal) return undefined
-  return `The line: ${aimLabel(solution.ideal.aimIndex)}, ${speedLabel(solution.ideal.speedIndex)}`
+  const degrees = aimDegrees(solution.ideal.aimIndex)
+  const line = degrees === 0
+    ? 'straight'
+    : `${Math.abs(degrees).toFixed(1)}\u00b0 ${degrees < 0 ? 'left' : 'right'}`
+  return `The line: ${line}, ${speedLabel(solution.ideal.speedIndex)}`
 }
 
 export default function App() {
@@ -111,7 +93,6 @@ export default function App() {
   const [stats, setStats] = useState<PlayerStats>(() => loadStats())
   const [solution, setSolution] = useState<PuzzleSolution>()
   const [showResult, setShowResult] = useState(false)
-  const [selectedReviewStroke, setSelectedReviewStroke] = useState(0)
   const [showStats, setShowStats] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding())
   const [copied, setCopied] = useState(false)
@@ -181,7 +162,6 @@ export default function App() {
         setAnimation(undefined)
         setSolution(undefined)
         setShowResult(false)
-        setSelectedReviewStroke(0)
         setCopied(false)
         setLoading(false)
       })
@@ -211,9 +191,9 @@ export default function App() {
     if (!puzzle || !finished || solution) return
     const worker = new Worker(new URL('../sim/solve.worker.ts', import.meta.url), { type: 'module' })
     worker.onmessage = (event: MessageEvent<PuzzleSolution>) => setSolution(event.data)
-    worker.postMessage({ puzzle, strokeStarts: strokes.map((stroke) => stroke.start) })
+    worker.postMessage(puzzle)
     return () => worker.terminate()
-  }, [finished, puzzle, solution, strokes])
+  }, [finished, puzzle, solution])
 
   const beginLoad = () => {
     if (frame.current !== undefined) cancelAnimationFrame(frame.current)
@@ -280,7 +260,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [approachResult, showOnboarding, introPending])
 
-  const rollStroke = (result: PuttResult, isTapIn = false) => {
+  const rollStroke = (result: PuttResult) => {
     if (!puzzle || !ball || animation || finished || introPending) return
     const started = performance.now()
     const nextAnimation: Animation = { kind: 'putt', result, aimIndex, speedIndex, startTime: started, time: 0 }
@@ -302,7 +282,6 @@ export default function App() {
         lipOut: result.lipOut,
         elapsed: result.elapsed,
         path: result.path,
-        tapIn: isTapIn,
       }
       setStrokes((current) => {
         const next = [...current, stroke]
@@ -325,7 +304,7 @@ export default function App() {
   const tapIn = () => {
     if (!puzzle || !ball || animation || finished || introPending) return
     const result = createTapInResult(ball, puzzle.hole)
-    if (result) rollStroke(result, true)
+    if (result) rollStroke(result)
   }
 
   useEffect(() => () => {
@@ -362,15 +341,6 @@ export default function App() {
   const distributionKeys = ['1', '2', '3', '4', '5', 'X']
   const maximumDistribution = Math.max(1, ...distributionKeys.map((key) => stats.distribution[key] ?? 0))
   const lineLabel = idealLabel(solution)
-  const selectedStroke = strokes[selectedReviewStroke]
-  const selectedIsTapIn = Boolean(selectedStroke && puzzle && isAutomaticTapIn(selectedStroke, puzzle))
-  const selectedIdeal = selectedIsTapIn
-    ? undefined
-    : solution?.strokeIdeals?.[selectedReviewStroke] ??
-      (selectedReviewStroke === 0 ? solution?.ideal : undefined)
-  const selectedIdealLabel = selectedIdeal
-    ? `Putt ${selectedReviewStroke + 1} best: ${puttInputLabel(selectedIdeal)}`
-    : undefined
 
   const closeOnboarding = () => {
     markOnboardingSeen()
@@ -438,50 +408,18 @@ export default function App() {
               animationKind={animation?.kind}
               activePath={animation?.result.path}
               animationTime={animation?.time}
-              revealPaths={selectedReviewStroke === 0 ? solution?.paths ?? [] : []}
-              idealPath={selectedIdeal?.path}
-              idealLabel={selectedIdealLabel}
-              highlightedStrokeIndex={finished ? selectedReviewStroke : undefined}
+              revealPaths={solution?.paths ?? []}
+              idealPath={solution?.ideal?.path}
+              idealLabel={lineLabel}
               revealed={finished}
             />
             {finished && showResult && (
               <div className="win-card" role="dialog" aria-label="Puzzle result">
                 <button className="win-close" type="button" aria-label="Close result" onClick={() => setShowResult(false)}>×</button>
-                <div className="result-summary">
-                  <span className="eyebrow">{won ? 'Holed' : 'Round complete'}</span>
-                  <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
-                  <span className="muted">{solvingReveal ? 'Mapping the make window...' : lineLabel ?? 'No opening line found'}</span>
-                  {mode === 'daily' && <span className="countdown">Next green in {countdown}</span>}
-                </div>
-                <div className="stroke-review" aria-label="Stroke recap">
-                  <span className="review-heading">Stroke recap <small>Select one to compare traces</small></span>
-                  {strokes.map((stroke, index) => {
-                    const best = solution?.strokeIdeals?.[index] ?? (index === 0 ? solution?.ideal : undefined)
-                    const automaticTapIn = isAutomaticTapIn(stroke, puzzle)
-                    const outcome = automaticTapIn
-                      ? 'Automatic finish'
-                      : stroke.holed ? 'Holed' : describeMiss(puzzle, stroke)
-                    return (
-                      <button
-                        className={`review-stroke ${selectedReviewStroke === index ? 'selected' : ''}`}
-                        type="button"
-                        aria-pressed={selectedReviewStroke === index}
-                        onClick={() => setSelectedReviewStroke(index)}
-                        key={index}
-                      >
-                        <span className="review-stroke-title"><b>Putt {index + 1}</b><em>{outcome}</em></span>
-                        {automaticTapIn ? (
-                          <span className="review-input"><i>Played</i><span>Tap-in from {formatFeet(stroke.finalDistance || Math.hypot(puzzle.hole.x - stroke.start.x, puzzle.hole.y - stroke.start.y))}</span></span>
-                        ) : (
-                          <>
-                            <span className="review-input"><i>Played</i><span>{puttInputLabel(stroke)}</span></span>
-                            <span className="review-input best"><i>Best</i><span>{solvingReveal ? 'Calculating…' : best ? puttInputLabel(best) : 'No make found from here'}</span></span>
-                          </>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                <span className="eyebrow">{won ? 'Holed' : 'Round complete'}</span>
+                <strong>{won ? `${strokes.length}/${MAX_PUTTS}` : `X/${MAX_PUTTS}`}</strong>
+                <span className="muted">{solvingReveal ? 'Mapping the make window...' : lineLabel ?? 'No opening line found'}</span>
+                {mode === 'daily' && <span className="countdown">Next green in {countdown}</span>}
                 <button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
                 <button className="text-button" type="button" onClick={() => setShowResult(false)}>View green</button>
               </div>
