@@ -10,6 +10,7 @@ const LEGACY_STATS_KEY = 'break:stats:v1'
 const ROUND_KEY_PREFIX = 'puttle:round:v1:'
 const STATS_KEY = 'puttle:stats:v1'
 const ONBOARDING_KEY = 'puttle:onboarding:v1'
+const ROUND_SIMULATION_VERSION = 2
 
 const EMPTY_STATS: PlayerStats = {
   currentStreak: 0,
@@ -28,10 +29,10 @@ function read<T>(key: string): T | undefined {
 }
 
 export function puzzleFingerprint(puzzle: PuzzleDefinition): string {
-  // The public definition has deterministic property order. Retaining its
-  // complete serialization makes this an exact identity check, so any future
-  // archive regeneration safely invalidates incompatible stroke coordinates.
-  return JSON.stringify(puzzle)
+  // The public definition has deterministic property order. Including the
+  // simulation version also invalidates in-progress rounds when cup physics
+  // changes without requiring every archived definition to be regenerated.
+  return `${ROUND_SIMULATION_VERSION}:${JSON.stringify(puzzle)}`
 }
 
 export function loadRound(puzzle: PuzzleDefinition): SavedRound {

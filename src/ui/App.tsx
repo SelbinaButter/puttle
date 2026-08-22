@@ -398,6 +398,8 @@ export default function App() {
               ball={ball}
               aimIndex={aimIndex}
               speedIndex={speedIndex}
+              aimEnabled={!finished && !controlsDisabled && !tapInAvailable}
+              onAimIndexChange={setAimIndex}
               approachPath={approachResult.path}
               approachTrailUntil={introPending ? (animation?.kind === 'approach' ? animation.time : 0) : undefined}
               animationKind={animation?.kind}
@@ -421,7 +423,7 @@ export default function App() {
             )}
           </div>
 
-          {!finished && strokes.length === 0 && <div className="first-read"><b>Watch the approach to read the break.</b> Its muted trace stays on the green as your reference. The slope itself remains hidden until the round ends.</div>}
+          {!finished && strokes.length === 0 && <div className="first-read"><b>Watch the approach to read the break.</b> The slope remains hidden until the round ends.</div>}
 
           {!finished && lastStroke && (
             <div className={`stroke-feedback ${lastStroke.lipOut ? 'lip-out' : ''}`} role="status">
@@ -451,9 +453,9 @@ export default function App() {
                 <small><span>15° left</span><span>Straight</span><span>15° right</span></small>
               </label>
               <label>
-                <span><b>Speed</b><output>{speedLabel(speedIndex)}</output></span>
+                <span><b>Pace <i>flat-green finish</i></b><output>{speedLabel(speedIndex)}</output></span>
                 <div className="slider-stepper"><button type="button" aria-label="Softer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === 0} onClick={() => setSpeedIndex((value) => value - 1)}>−</button><input type="range" min="0" max={SPEED_COUNT - 1} step="1" value={speedIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setSpeedIndex(Number(event.target.value))} /><button type="button" aria-label="Firmer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === SPEED_COUNT - 1} onClick={() => setSpeedIndex((value) => value + 1)}>+</button></div>
-                <small><span>Leave it short</span><span>Firm</span></small>
+                <small><span>Soft</span><span>Firm</span></small>
               </label>
               <div className="stroke-actions">
                 {tapInAvailable ? <button className="tap-in-button" type="button" disabled={controlsDisabled} onClick={tapIn}>Tap in</button> : <button className="putt-button" type="button" disabled={controlsDisabled} onClick={startPutt}>{animation?.kind === 'putt' ? 'Rolling...' : animation?.kind === 'approach' ? 'Reading...' : 'Putt'}</button>}

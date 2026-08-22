@@ -72,4 +72,38 @@ describe('putting simulation', () => {
     expect(Number.isFinite(result.final.x)).toBe(true)
     expect(Number.isFinite(result.final.y)).toBe(true)
   })
+
+  it('captures a centered four-footer at one-foot-past pace on a downhill slope', () => {
+    const start = { x: TEST_PUZZLE.hole.x - 4, y: TEST_PUZZLE.hole.y }
+    const downhill: PuzzleDefinition = {
+      ...TEST_PUZZLE,
+      ball: start,
+      green: {
+        ...TEST_PUZZLE.green,
+        tilt: { x: -Math.tan((2 * Math.PI) / 180), y: 0 },
+      },
+    }
+
+    const result = simulatePutt(downhill, start, 30, 8)
+    expect(result.holed).toBe(true)
+    expect(result.lipOut).toBe(false)
+  })
+
+  it('rejects a fast centered putt without bouncing it back toward the player', () => {
+    const start = { x: TEST_PUZZLE.hole.x - 4, y: TEST_PUZZLE.hole.y }
+    const result = simulatePutt(TEST_PUZZLE, start, 30, 30)
+
+    expect(result.holed).toBe(false)
+    expect(result.lipOut).toBe(true)
+    expect(result.final.x).toBeGreaterThan(TEST_PUZZLE.hole.x)
+  })
+
+  it('uses the same capture window on either side of a level cup', () => {
+    const start = { x: TEST_PUZZLE.hole.x - 4, y: TEST_PUZZLE.hole.y }
+    const left = simulatePutt(TEST_PUZZLE, start, 26, 8)
+    const right = simulatePutt(TEST_PUZZLE, start, 34, 8)
+
+    expect(left.holed).toBe(right.holed)
+    expect(left.lipOut).toBe(right.lipOut)
+  })
 })

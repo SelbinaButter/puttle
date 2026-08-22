@@ -6,6 +6,7 @@ import type { PathPoint, PuzzleDefinition, PuttResult, SimOptions, Vec2 } from '
 const REST_SPEED = 0.025
 const STATIC_FRICTION_FACTOR = 1.08
 const PATH_EVERY_STEPS = 4
+const CENTER_CAPTURE_SPEED_FTPS = 4.5
 
 function distanceBetween(a: Vec2, b: Vec2): number {
   const dx = a.x - b.x
@@ -21,6 +22,26 @@ function closestPointOnSegment(point: Vec2, from: Vec2, to: Vec2): { point: Vec2
   const raw = ((point.x - from.x) * dx + (point.y - from.y) * dy) / lengthSquared
   const ratio = Math.max(0, Math.min(1, raw))
   return { point: { x: from.x + ratio * dx, y: from.y + ratio * dy }, ratio }
+}
+
+function projectedCupApproach(
+  hole: Vec2,
+  position: Vec2,
+  velocityX: number,
+  velocityY: number,
+): { point: Vec2; offset: number } {
+  const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY)
+  if (speed === 0) return { point: position, offset: distanceBetween(position, hole) }
+  const directionX = velocityX / speed
+  const directionY = velocityY / speed
+  const toHoleX = hole.x - position.x
+  const toHoleY = hole.y - position.y
+  const forwardDistance = Math.max(0, toHoleX * directionX + toHoleY * directionY)
+  const point = {
+    x: position.x + directionX * forwardDistance,
+    y: position.y + directionY * forwardDistance,
+  }
+  return { point, offset: distanceBetween(point, hole) }
 }
 
 function pathPoint(position: Vec2, time: number, velocityX: number, velocityY: number): PathPoint {
@@ -103,11 +124,21 @@ function simulateMotion(
 
     if (captureHole && holeCooldown === 0) {
       const closest = closestPointOnSegment(puzzle.hole, previous, next)
-      const offset = distanceBetween(closest.point, puzzle.hole)
-      if (offset <= HOLE_RADIUS_FT) {
+      const contactDistance = distanceBetween(closest.point, puzzle.hole)
+      if (contactDistance <= HOLE_RADIUS_FT) {
         const entrySpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY)
-        const offsetRatio = offset / HOLE_RADIUS_FT
-        const captureSpeed = 4.5 - 2.5 * offsetRatio * offsetRatio
+        // Capture depends on the path's lateral impact parameter through the
+        // cup, not the ball's radial position on the first frame that touches
+        // the near rim. Using the latter made even center-bound downhill putts
+        // behave like glancing edge contacts and bounce back toward the player.
+        const approach = projectedCupApproach(
+          puzzle.hole,
+          previous,
+          velocityX,
+          velocityY,
+        )
+        const offsetRatio = Math.min(1, approach.offset / HOLE_RADIUS_FT)
+        const captureSpeed = CENTER_CAPTURE_SPEED_FTPS * (1 - offsetRatio * offsetRatio)
         if (entrySpeed <= captureSpeed) {
           position = { ...puzzle.hole }
           elapsed = (step - 1 + closest.ratio) * FIXED_DT
@@ -115,14 +146,15 @@ function simulateMotion(
           velocityY = 0
           rested = true
           holed = true
+          lipOut = false
           if (recordPath) path.push(pathPoint(position, elapsed, 0, 0))
           break
         }
 
         // Preserve most tangential speed while pushing the ball away from the
         // rim. This short deterministic deflection reads visually as a lip-out.
-        let normalX = closest.point.x - puzzle.hole.x
-        let normalY = closest.point.y - puzzle.hole.y
+        let normalX = approach.point.x - puzzle.hole.x
+        let normalY = approach.point.y - puzzle.hole.y
         const normalLength = Math.sqrt(normalX * normalX + normalY * normalY)
         if (normalLength > 0) {
           normalX /= normalLength
