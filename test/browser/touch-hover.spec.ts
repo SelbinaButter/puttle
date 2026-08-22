@@ -41,6 +41,12 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   await page.reload()
 
   expect(await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)).toBe(false)
+  await expect(page.locator('.result-panel .result-nav-action').first()).toBeHidden()
+  const resultPanelBounds = await page.locator('.result-panel').boundingBox()
+  const shareBounds = await page.getByRole('button', { name: 'Share result' }).boundingBox()
+  expect(resultPanelBounds?.height).toBeLessThan(170)
+  expect((shareBounds?.y ?? Infinity) + (shareBounds?.height ?? 0)).toBeLessThanOrEqual(874)
+
   const showSolution = page.getByRole('button', { name: 'Show a makeable line' })
   await expect(showSolution).toBeEnabled({ timeout: 15_000 })
   await showSolution.tap()

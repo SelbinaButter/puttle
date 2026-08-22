@@ -154,9 +154,10 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .controls .stroke-actions { grid-column: 1 / -1; }
   .putt-button, .tap-in-button { width: 100%; padding-block: 11px; }
   .stroke-feedback { padding: 10px 16px; align-items: flex-start; flex-direction: column; gap: 2px; }
-  .result-panel { align-items: stretch; flex-direction: column; gap: 13px; }
-  .result-panel button { width: 100%; }
-  .result-actions { flex-direction: column; }
+  .result-panel { min-height: 0; padding: 12px; align-items: stretch; flex-direction: column; gap: 10px; }
+  .result-panel button { width: 100%; min-width: 0; padding: 10px 8px; font-size: .68rem; }
+  .result-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .result-actions .result-nav-action { display: none; }
   .intro-card { padding: 23px 20px; }
   footer { line-height: 1.5; }
 }

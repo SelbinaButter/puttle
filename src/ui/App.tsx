@@ -455,7 +455,7 @@ export default function App() {
                 >
                   {showSolution ? 'Hide solution line' : solvingReveal ? 'Finding a line…' : solution?.ideal ? 'Show a makeable line' : 'No solution found'}
                 </button>
-                {mode === 'practice' ? <button className="secondary-button" type="button" onClick={choosePracticePuzzle}>New green</button> : <>{mode !== 'archive' && <button className="secondary-button" type="button" onClick={() => changeMode('archive')}>Archive</button>}<button className="secondary-button" type="button" onClick={choosePracticePuzzle}>Practice</button></>}
+                {mode === 'practice' ? <button className="secondary-button result-nav-action" type="button" onClick={choosePracticePuzzle}>New green</button> : <>{mode !== 'archive' && <button className="secondary-button result-nav-action" type="button" onClick={() => changeMode('archive')}>Archive</button>}<button className="secondary-button result-nav-action" type="button" onClick={choosePracticePuzzle}>Practice</button></>}
                 <button type="button" onClick={() => void copyResult()}>{copied ? 'Copied!' : 'Share result'}</button>
               </div>
             </div>
