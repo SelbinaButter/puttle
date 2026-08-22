@@ -33,6 +33,31 @@ test('canvas aiming and pace language work together', async ({ page }) => {
   await expect(page.getByText('Leave it short', { exact: true })).toHaveCount(0)
 })
 
+test('Stimp help explains the reading without moving it off center', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => localStorage.setItem('puttle:onboarding:v1', 'seen'))
+  await page.goto('/')
+
+  const readout = page.locator('.readout-row')
+  const stimpReadout = page.locator('.stimp-readout')
+  const readoutBounds = await readout.boundingBox()
+  const stimpBounds = await stimpReadout.boundingBox()
+  expect(readoutBounds).not.toBeNull()
+  expect(stimpBounds).not.toBeNull()
+  expect(Math.abs(
+    (stimpBounds?.x ?? 0) + (stimpBounds?.width ?? 0) / 2
+      - ((readoutBounds?.x ?? 0) + (readoutBounds?.width ?? 0) / 2),
+  )).toBeLessThanOrEqual(0.5)
+
+  const helpButton = page.getByRole('button', { name: 'What is Stimp?' })
+  const tooltip = page.getByRole('tooltip')
+  await expect(tooltip).toBeHidden()
+  await helpButton.focus()
+  await expect(tooltip).toBeVisible()
+  await expect(tooltip).toContainText('distance, in feet')
+  await expect(tooltip).toContainText('higher numbers are faster')
+})
+
 test('primary mobile controls fit on an iPhone 16 Pro viewport', async ({ page }) => {
   await page.setViewportSize({ width: 402, height: 874 })
   await page.emulateMedia({ reducedMotion: 'reduce' })

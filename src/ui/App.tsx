@@ -400,10 +400,20 @@ export default function App() {
       ) : (
         <section className="game-card">
           <div className="readout-row">
-            <span>{formatFeet(distance)} to cup</span>
-            <span title="Stimpmeter green-speed rating. Higher numbers roll faster and farther.">Green speed · {puzzle.stimp.toFixed(1)} Stimp</span>
-            {strokes.length === 0 && !finished && <button className="result-reopen approach-replay" type="button" disabled={animation?.kind === 'approach'} onClick={playApproach}>Watch approach again</button>}
-            {finished && !showResult ? <button className="result-reopen" type="button" onClick={() => setShowResult(true)}>View result</button> : <span>Putt {finished ? strokes.length : strokes.length + 1}/{MAX_PUTTS}</span>}
+            <span className="readout-distance">{formatFeet(distance)} to cup</span>
+            <span className="stimp-readout">
+              <span>Green speed · {puzzle.stimp.toFixed(1)} Stimp</span>
+              <span className="stimp-help">
+                <button className="stimp-help-button" type="button" aria-label="What is Stimp?" aria-describedby="stimp-tooltip">?</button>
+                <span className="stimp-tooltip" id="stimp-tooltip" role="tooltip">
+                  Stimp is the distance, in feet, a ball rolls on a level green when released from a standard Stimpmeter. A 10.0 reading means about 10 feet in that test; higher numbers are faster, so putts roll farther and feel more influence from the slope.
+                </span>
+              </span>
+            </span>
+            <div className="readout-actions">
+              {strokes.length === 0 && !finished && <button className="result-reopen approach-replay" type="button" disabled={animation?.kind === 'approach'} onClick={playApproach}>Watch approach again</button>}
+              {finished && !showResult ? <button className="result-reopen readout-status" type="button" onClick={() => setShowResult(true)}>View result</button> : <span className="readout-status">Putt {finished ? strokes.length : strokes.length + 1}/{MAX_PUTTS}</span>}
+            </div>
           </div>
           <div className="canvas-wrap">
             <GreenCanvas
