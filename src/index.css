@@ -51,7 +51,6 @@ button:disabled { cursor: default; opacity: .5; }
 .review-controls button:hover:not(:disabled) { background: rgba(255,255,255,.1); }
 .review-controls .zoom-reset { min-width: 48px; color: #dce28f; font-size: .7rem; }
 .controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 24px; align-items: end; padding: 20px; }
-.gesture-hint { grid-column: 1 / -1; margin-bottom: -12px; color: #82988a; font-size: .67rem; line-height: 1.4; }
 .controls label > span { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: .83rem; }
 .controls label > span b i { margin-left: 5px; color: #718779; font-size: .58rem; font-style: normal; font-weight: 650; letter-spacing: .02em; }
 .controls output { color: #f0df7c; font-variant-numeric: tabular-nums; }
@@ -139,7 +138,6 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .readout-row { gap: 8px; padding: 11px 12px; font-size: .68rem; flex-wrap: wrap; }
   .canvas-wrap { height: 52vh; min-height: 350px; }
   .controls { grid-template-columns: 1fr; gap: 15px; padding: 16px; }
-  .gesture-hint { margin-bottom: -5px; }
   .stroke-actions { width: 100%; }
   .putt-button, .tap-in-button { width: 100%; }
   .first-read { padding: 11px 16px; }

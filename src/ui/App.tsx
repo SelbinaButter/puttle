@@ -510,7 +510,6 @@ export default function App() {
             </div>
           ) : !finished ? (
             <div className="controls" aria-label="Putt controls">
-              <div className="gesture-hint">On the green, drag sideways for aim and forward or back for pace. Every move snaps to the slider steps.</div>
               <label>
                 <span><b>Aim</b><output>{aimDegrees(aimIndex) > 0 ? '+' : ''}{aimDegrees(aimIndex).toFixed(1)}°</output></span>
                 <div className="slider-stepper"><button type="button" aria-label="Aim left one step" disabled={controlsDisabled || tapInAvailable || aimIndex === 0} onClick={() => setAimIndex((value) => value - 1)}>−</button><input type="range" min="0" max={AIM_COUNT - 1} step="1" value={aimIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setAimIndex(Number(event.target.value))} /><button type="button" aria-label="Aim right one step" disabled={controlsDisabled || tapInAvailable || aimIndex === AIM_COUNT - 1} onClick={() => setAimIndex((value) => value + 1)}>+</button></div>
