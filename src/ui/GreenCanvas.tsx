@@ -291,39 +291,12 @@ function drawCup(
   center: Vec2,
   radius: number,
   ratio: number,
-  close: boolean,
 ) {
   context.save()
-  context.shadowColor = 'rgba(0, 0, 0, .28)'
-  context.shadowBlur = (close ? 4 : 2) * ratio
-  context.shadowOffsetY = 1.5 * ratio
-  context.fillStyle = 'rgba(225, 230, 210, .88)'
+  context.fillStyle = '#0b1810'
   context.beginPath()
-  context.arc(center.x, center.y, radius + 1.4 * ratio, 0, Math.PI * 2)
+  context.arc(center.x, center.y, radius * ratio, 0, Math.PI * 2)
   context.fill()
-  context.shadowColor = 'transparent'
-
-  const depth = context.createRadialGradient(
-    center.x - radius * 0.28,
-    center.y - radius * 0.32,
-    radius * 0.08,
-    center.x,
-    center.y,
-    radius,
-  )
-  depth.addColorStop(0, '#26362c')
-  depth.addColorStop(0.48, '#142019')
-  depth.addColorStop(1, '#06100a')
-  context.fillStyle = depth
-  context.beginPath()
-  context.arc(center.x, center.y, radius, 0, Math.PI * 2)
-  context.fill()
-
-  context.strokeStyle = close ? 'rgba(255,255,245,.28)' : 'rgba(255,255,245,.18)'
-  context.lineWidth = 0.8 * ratio
-  context.beginPath()
-  context.arc(center.x, center.y, Math.max(1, radius - 0.6 * ratio), 0, Math.PI * 2)
-  context.stroke()
   context.restore()
 }
 
@@ -331,64 +304,56 @@ function drawFlag(
   context: CanvasRenderingContext2D,
   hole: Vec2,
   ratio: number,
+  brandMark: HTMLImageElement | undefined,
 ) {
-  const top = hole.y - 31 * ratio
+  const base = hole.y + ratio
+  const top = base - 64 * ratio
   context.save()
-  context.strokeStyle = 'rgba(0,0,0,.2)'
-  context.lineWidth = 2.8 * ratio
-  context.beginPath()
-  context.moveTo(hole.x + 1.4 * ratio, hole.y + 1.2 * ratio)
-  context.lineTo(hole.x + 1.4 * ratio, top)
-  context.stroke()
+  context.lineCap = 'butt'
 
-  const pole = context.createLinearGradient(hole.x - ratio, 0, hole.x + ratio, 0)
-  pole.addColorStop(0, '#dce1d5')
-  pole.addColorStop(0.5, '#ffffff')
-  pole.addColorStop(1, '#9ea99d')
-  context.strokeStyle = pole
-  context.lineWidth = 1.6 * ratio
+  // A centered flat outline keeps the thin pole readable without making it
+  // look glossy or shifting its visual weight to either side.
+  context.strokeStyle = '#334b37'
+  context.lineWidth = 3 * ratio
   context.beginPath()
-  context.moveTo(hole.x, hole.y)
+  context.moveTo(hole.x, base)
   context.lineTo(hole.x, top)
   context.stroke()
 
-  const flag = context.createLinearGradient(hole.x, top, hole.x + 19 * ratio, top + 8 * ratio)
-  flag.addColorStop(0, '#fff19a')
-  flag.addColorStop(0.58, '#e9cf5e')
-  flag.addColorStop(1, '#b99a30')
-  context.fillStyle = flag
+  context.strokeStyle = '#eee9c9'
+  context.lineWidth = 1.6 * ratio
   context.beginPath()
-  context.moveTo(hole.x, top + 1.5 * ratio)
-  context.bezierCurveTo(
-    hole.x + 6 * ratio,
-    top - 1.5 * ratio,
-    hole.x + 12 * ratio,
-    top + 4 * ratio,
-    hole.x + 20 * ratio,
-    top + 2.5 * ratio,
-  )
-  context.lineTo(hole.x + 17.5 * ratio, top + 10.5 * ratio)
-  context.bezierCurveTo(
-    hole.x + 11 * ratio,
-    top + 12 * ratio,
-    hole.x + 6 * ratio,
-    top + 6.5 * ratio,
-    hole.x,
-    top + 9 * ratio,
-  )
-  context.closePath()
-  context.fill()
-  context.strokeStyle = 'rgba(101,77,17,.32)'
-  context.lineWidth = 0.7 * ratio
-  context.beginPath()
-  context.moveTo(hole.x + 8.5 * ratio, top + 1.8 * ratio)
-  context.quadraticCurveTo(hole.x + 10 * ratio, top + 6 * ratio, hole.x + 9 * ratio, top + 9 * ratio)
+  context.moveTo(hole.x, base)
+  context.lineTo(hole.x, top)
   context.stroke()
 
-  context.fillStyle = '#fff7bf'
-  context.beginPath()
-  context.arc(hole.x, top, 1.8 * ratio, 0, Math.PI * 2)
-  context.fill()
+  const flagTop = top + 2 * ratio
+  const flagWidth = 25 * ratio
+  const flagHeight = 15 * ratio
+  context.fillStyle = '#f3f1dc'
+  context.strokeStyle = '#87947d'
+  context.lineWidth = 0.8 * ratio
+  context.fillRect(hole.x, flagTop, flagWidth, flagHeight)
+  context.strokeRect(hole.x, flagTop, flagWidth, flagHeight)
+
+  if (brandMark) {
+    const markSize = 13 * ratio
+    context.imageSmoothingEnabled = true
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(
+      brandMark,
+      hole.x + (flagWidth - markSize) / 2,
+      flagTop + (flagHeight - markSize) / 2,
+      markSize,
+      markSize,
+    )
+  } else {
+    context.fillStyle = '#0b4a2d'
+    context.font = `800 ${9 * ratio}px Georgia, 'Times New Roman', serif`
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.fillText('P', hole.x + flagWidth / 2, flagTop + flagHeight * 0.52)
+  }
   context.restore()
 }
 
@@ -398,11 +363,22 @@ export function GreenCanvas(props: Props) {
   const pointers = useRef(new Map<number, Vec2>())
   const aimDrag = useRef<AimDrag>()
   const lastPinchDistance = useRef<number>()
+  const [brandMark, setBrandMark] = useState<HTMLImageElement>()
   const [resizeTick, setResizeTick] = useState(0)
   const [reviewCamera, setReviewCamera] = useState<ReviewCamera>({
     zoom: 1,
     center: { ...props.puzzle.hole },
   })
+
+  useEffect(() => {
+    const image = new Image()
+    image.decoding = 'async'
+    image.src = `${import.meta.env.BASE_URL}flag-mark.svg`
+    image.onload = () => setBrandMark(image)
+    return () => {
+      image.onload = null
+    }
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -429,6 +405,10 @@ export function GreenCanvas(props: Props) {
       props.strokes.length === 0 ? props.approachPath : [],
       props.revealed ? reviewCamera : undefined,
     )
+    const ballRadius = 5.25 * ratio
+    const cupRadius = transform.zoomed || (props.revealed && reviewCamera.zoom > 1)
+      ? 7.35
+      : 6.8
     transformRef.current = transform
     const greenTopLeft = screen({ x: 0, y: 0 }, transform)
     const greenBottomRight = screen(
@@ -517,7 +497,7 @@ export function GreenCanvas(props: Props) {
         context.strokeStyle = 'rgba(28, 48, 32, .72)'
         context.lineWidth = 1.4 * ratio
         context.beginPath()
-        context.arc(end.x, end.y, 5.5 * ratio, 0, Math.PI * 2)
+        context.arc(end.x, end.y, ballRadius, 0, Math.PI * 2)
         context.fill()
         context.stroke()
       }
@@ -536,14 +516,8 @@ export function GreenCanvas(props: Props) {
 
     const hole = screen(props.puzzle.hole, transform)
     const closeCup = input.distance <= 6
-    drawCup(
-      context,
-      hole,
-      Math.max(4 * ratio, transform.scale * 0.177),
-      ratio,
-      closeCup,
-    )
-    if (!closeCup) drawFlag(context, hole, ratio)
+    drawCup(context, hole, cupRadius, ratio)
+    if (!closeCup) drawFlag(context, hole, ratio, brandMark)
 
     const animatedBall = props.activePath
       ? interpolatedBall(props.activePath, props.animationTime ?? 0)
@@ -555,11 +529,11 @@ export function GreenCanvas(props: Props) {
       context.shadowOffsetY = 2 * ratio
       context.fillStyle = '#fffef5'
       context.beginPath()
-      context.arc(pixel.x, pixel.y, 6.5 * ratio, 0, Math.PI * 2)
+      context.arc(pixel.x, pixel.y, ballRadius, 0, Math.PI * 2)
       context.fill()
       context.shadowColor = 'transparent'
     }
-  }, [props, resizeTick, reviewCamera])
+  }, [props, resizeTick, reviewCamera, brandMark])
 
   const pointerPosition = (event: CanvasPositionEvent): Vec2 => {
     const canvas = event.currentTarget
