@@ -50,11 +50,18 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   const resultDialogBounds = await page.getByRole('dialog', { name: 'Puzzle result' }).boundingBox()
   expect(resultDialogBounds).not.toBeNull()
   await expect(page.locator('.result-panel')).toBeVisible()
-  const resultPanelWhileOpen = await page.locator('.result-panel').boundingBox()
+  const resultPanel = page.locator('.result-panel')
+  const resultPanelWhileOpen = await resultPanel.evaluate((element) => {
+    const bounds = element.getBoundingClientRect()
+    return { height: bounds.height, y: bounds.y + window.scrollY }
+  })
   await page.getByRole('dialog', { name: 'Puzzle result' }).getByRole('button', { name: 'View green' }).tap()
-  const resultPanelAfterClose = await page.locator('.result-panel').boundingBox()
-  expect(resultPanelAfterClose?.y).toBe(resultPanelWhileOpen?.y)
-  expect(resultPanelAfterClose?.height).toBe(resultPanelWhileOpen?.height)
+  const resultPanelAfterClose = await resultPanel.evaluate((element) => {
+    const bounds = element.getBoundingClientRect()
+    return { height: bounds.height, y: bounds.y + window.scrollY }
+  })
+  expect(resultPanelAfterClose.y).toBe(resultPanelWhileOpen.y)
+  expect(resultPanelAfterClose.height).toBe(resultPanelWhileOpen.height)
   const scoreBounds = await page.locator('.result-panel strong').boundingBox()
   const reviewCopyBounds = await page.locator('.result-panel .muted').boundingBox()
   const scoreToCopyGap = (reviewCopyBounds?.x ?? Infinity) - ((scoreBounds?.x ?? 0) + (scoreBounds?.width ?? 0))
