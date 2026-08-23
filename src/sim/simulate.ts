@@ -1,4 +1,10 @@
-import { FIXED_DT, GRAVITY_FTPS2, HOLE_RADIUS_FT, rollingAcceleration } from './constants'
+import {
+  FIXED_DT,
+  GRAVITY_FTPS2,
+  HOLE_RADIUS_FT,
+  ROLLING_SLOPE_FACTOR,
+  rollingAcceleration,
+} from './constants'
 import { puttInput } from './input'
 import { frictionMultiplier, sampleSurface } from './surface'
 import type { PathPoint, PuzzleDefinition, PuttResult, SimOptions, Vec2 } from './types'
@@ -74,8 +80,8 @@ function simulateMotion(
 
   for (let step = 1; step <= maxSteps; step += 1) {
     const sample = sampleSurface(puzzle.green, position)
-    const slopeAccelerationX = -GRAVITY_FTPS2 * sample.gradient.x
-    const slopeAccelerationY = -GRAVITY_FTPS2 * sample.gradient.y
+    const slopeAccelerationX = -GRAVITY_FTPS2 * ROLLING_SLOPE_FACTOR * sample.gradient.x
+    const slopeAccelerationY = -GRAVITY_FTPS2 * ROLLING_SLOPE_FACTOR * sample.gradient.y
     const slopeMagnitude = Math.sqrt(
       slopeAccelerationX * slopeAccelerationX + slopeAccelerationY * slopeAccelerationY,
     )

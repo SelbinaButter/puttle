@@ -18,12 +18,17 @@ export function connectedComponents(makes: MakeInput[]): MakeInput[][] {
       const key = queue.pop() as string
       const putt = byKey.get(key) as MakeInput
       component.push(putt)
-      const neighbours = [
-        `${putt.aimIndex - 1}:${putt.speedIndex}`,
-        `${putt.aimIndex + 1}:${putt.speedIndex}`,
-        `${putt.aimIndex}:${putt.speedIndex - 1}`,
-        `${putt.aimIndex}:${putt.speedIndex + 1}`,
-      ]
+      // Aim and pace form a continuous two-dimensional control surface. Two
+      // successful samples that differ by one step in both controls are still
+      // part of the same coherent make window, even though they only touch on
+      // the diagonal in this sampled grid.
+      const neighbours: string[] = []
+      for (let aimDelta = -1; aimDelta <= 1; aimDelta += 1) {
+        for (let speedDelta = -1; speedDelta <= 1; speedDelta += 1) {
+          if (aimDelta === 0 && speedDelta === 0) continue
+          neighbours.push(`${putt.aimIndex + aimDelta}:${putt.speedIndex + speedDelta}`)
+        }
+      }
       for (const neighbour of neighbours) {
         if (unseen.delete(neighbour)) queue.push(neighbour)
       }

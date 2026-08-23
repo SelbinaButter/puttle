@@ -79,6 +79,8 @@ async function main() {
       `${JSON.stringify({
         date,
         attempts: generated.attempts,
+        stimp: generated.puzzle.stimp,
+        ...generated.schedule,
         ...generated.metrics,
       }, null, 2)}\n`,
       'utf8',

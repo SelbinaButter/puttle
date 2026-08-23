@@ -3,6 +3,11 @@ import type { Vec2 } from './types'
 export const GRAVITY_FTPS2 = 32.174
 export const FIXED_DT = 1 / 240
 export const HOLE_RADIUS_FT = 4.25 / 24
+// A rolling solid sphere converts part of gravity into rotational energy.
+// Penner's small-slope putting model therefore gives 5/7 of the point-mass
+// downslope acceleration. Stimp calibration below already measures the ball's
+// translational deceleration and must not receive this factor a second time.
+export const ROLLING_SLOPE_FACTOR = 5 / 7
 export const AIM_MIN_DEGREES = -15
 export const AIM_STEP_DEGREES = 0.5
 export const SPEED_MIN_PAST_FT = -3

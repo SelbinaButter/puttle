@@ -146,7 +146,7 @@ test('a saved fifth miss is a finished X/5 round', async ({ page }) => {
   await page.evaluate(
     ({ roundDate, fingerprint, strokes }) => {
       localStorage.setItem(
-        `puttle:round:v1:${roundDate}`,
+        `puttle:round:v2:${roundDate}`,
         JSON.stringify({ date: roundDate, puzzleFingerprint: fingerprint, strokes }),
       )
     },
@@ -164,7 +164,7 @@ test('a saved fifth miss is a finished X/5 round', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Puzzle result' })).toContainText('Round complete')
 })
 
-test('an untagged round from a regenerated puzzle is discarded', async ({ page }) => {
+test('an old-generation round is discarded', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
   await page.getByRole('button', { name: "Play today's green" }).click()
@@ -192,10 +192,10 @@ test('an untagged round from a regenerated puzzle is discarded', async ({ page }
   await expect(page.getByText('Putt 1/5')).toBeVisible()
   await expect(page.locator('.result-panel')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Putt', exact: true })).toBeVisible()
-  const migrated = await page.evaluate((roundDate) => {
-    const value = localStorage.getItem(`puttle:round:v1:${roundDate}`)
+  const fresh = await page.evaluate((roundDate) => {
+    const value = localStorage.getItem(`puttle:round:v2:${roundDate}`)
     return value ? JSON.parse(value) as { puzzleFingerprint?: string; strokes: unknown[] } : undefined
   }, date)
-  expect(migrated?.puzzleFingerprint).toBeTruthy()
-  expect(migrated?.strokes).toEqual([])
+  expect(fresh?.puzzleFingerprint).toBeTruthy()
+  expect(fresh?.strokes).toEqual([])
 })

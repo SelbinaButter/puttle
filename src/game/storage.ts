@@ -2,15 +2,12 @@ import { localDate, previousDate } from './date'
 import type { PuzzleDefinition } from '../sim'
 import type { PlayerStats, SavedRound } from './types'
 
-const LEGACY_ROUND_KEY = 'break:round:v1'
-const LEGACY_ROUND_KEY_PREFIX = 'break:round:v1:'
-const LEGACY_STATS_KEY = 'break:stats:v1'
-// Persistence is deliberately decoupled from the display brand. Renaming the
-// game must not reset saved rounds, onboarding, or player streaks.
-const ROUND_KEY_PREFIX = 'puttle:round:v1:'
-const STATS_KEY = 'puttle:stats:v1'
+// Generation two intentionally starts gameplay records clean after the
+// pre-launch archive rebuild. The onboarding key stays stable below.
+const ROUND_KEY_PREFIX = 'puttle:round:v2:'
+const STATS_KEY = 'puttle:stats:v2'
 const ONBOARDING_KEY = 'puttle:onboarding:v1'
-const ROUND_SIMULATION_VERSION = 2
+const ROUND_SIMULATION_VERSION = 4
 
 const EMPTY_STATS: PlayerStats = {
   currentStreak: 0,
@@ -37,10 +34,7 @@ export function puzzleFingerprint(puzzle: PuzzleDefinition): string {
 
 export function loadRound(puzzle: PuzzleDefinition): SavedRound {
   const fingerprint = puzzleFingerprint(puzzle)
-  const saved =
-    read<SavedRound>(`${ROUND_KEY_PREFIX}${puzzle.date}`) ??
-    read<SavedRound>(`${LEGACY_ROUND_KEY_PREFIX}${puzzle.date}`) ??
-    read<SavedRound>(LEGACY_ROUND_KEY)
+  const saved = read<SavedRound>(`${ROUND_KEY_PREFIX}${puzzle.date}`)
   return saved?.date === puzzle.date && saved.puzzleFingerprint === fingerprint
     ? saved
     : { date: puzzle.date, puzzleFingerprint: fingerprint, strokes: [] }
@@ -56,7 +50,7 @@ export function saveRound(puzzle: PuzzleDefinition, strokes: SavedRound['strokes
 }
 
 export function loadStats(): PlayerStats {
-  const stats = read<PlayerStats>(STATS_KEY) ?? read<PlayerStats>(LEGACY_STATS_KEY) ?? { ...EMPTY_STATS }
+  const stats = read<PlayerStats>(STATS_KEY) ?? { ...EMPTY_STATS }
   const today = localDate()
   if (
     stats.lastCompletedDate &&

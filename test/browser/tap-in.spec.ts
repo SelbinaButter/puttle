@@ -22,7 +22,7 @@ test('offers and scores a one-foot tap-in as the final stroke', async ({ page })
   await page.getByRole('button', { name: "Play today's green" }).click()
   await page.evaluate(({ date, fingerprint, puzzle }) => {
     const final = { x: puzzle.hole.x - 0.5, y: puzzle.hole.y }
-    localStorage.setItem(`puttle:round:v1:${date}`, JSON.stringify({
+    localStorage.setItem(`puttle:round:v2:${date}`, JSON.stringify({
       date,
       puzzleFingerprint: fingerprint,
       strokes: [{
@@ -65,7 +65,7 @@ test('offers and scores a one-foot tap-in as the final stroke', async ({ page })
   expect(messageDimensions.lineCount).toBe(1)
   const savedRound = await page.evaluate(() => {
     const date = document.querySelector('footer')?.textContent?.match(/\d{4}-\d{2}-\d{2}/)?.[0]
-    return date ? localStorage.getItem(`puttle:round:v1:${date}`) : null
+    return date ? localStorage.getItem(`puttle:round:v2:${date}`) : null
   })
   const saved = JSON.parse(savedRound ?? '{}') as { strokes?: Array<{ holed: boolean }> }
   expect(saved.strokes).toHaveLength(2)

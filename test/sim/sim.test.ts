@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   FIXED_DT,
   GRAVITY_FTPS2,
+  ROLLING_SLOPE_FACTOR,
+  connectedComponents,
   rollingAcceleration,
   simulateRoll,
   simulatePutt,
@@ -10,6 +12,18 @@ import {
 import { TEST_PUZZLE } from '../fixtures/puzzle'
 
 describe('putting simulation', () => {
+  it('treats a diagonal control band as one coherent solution region', () => {
+    expect(connectedComponents([
+      { aimIndex: 20, speedIndex: 8 },
+      { aimIndex: 21, speedIndex: 9 },
+      { aimIndex: 22, speedIndex: 10 },
+    ])).toHaveLength(1)
+    expect(connectedComponents([
+      { aimIndex: 20, speedIndex: 8 },
+      { aimIndex: 22, speedIndex: 10 },
+    ])).toHaveLength(2)
+  })
+
   it('reproduces the stored approach result exactly without capturing the cup', () => {
     const result = simulateRoll(TEST_PUZZLE, TEST_PUZZLE.approach.from, TEST_PUZZLE.approach.velocity)
     expect(result.final.x).toBe(TEST_PUZZLE.ball.x)
@@ -38,7 +52,7 @@ describe('putting simulation', () => {
   it('accelerates downhill and never freezes on a slope above static friction', () => {
     const steep: PuzzleDefinition = {
       ...TEST_PUZZLE,
-      green: { ...TEST_PUZZLE.green, tilt: { x: 0.06, y: 0 } },
+      green: { ...TEST_PUZZLE.green, tilt: { x: 0.08, y: 0 } },
     }
     const result = simulatePutt(steep, steep.ball, 30, 0, {
       captureHole: false,
@@ -47,7 +61,7 @@ describe('putting simulation', () => {
     expect(result.rested).toBe(false)
     expect(result.final.x).toBeLessThan(steep.ball.x)
 
-    const slopeForce = GRAVITY_FTPS2 * 0.06
+    const slopeForce = GRAVITY_FTPS2 * ROLLING_SLOPE_FACTOR * 0.08
     expect(slopeForce).toBeGreaterThan(rollingAcceleration(steep.stimp))
     expect(FIXED_DT).toBe(1 / 240)
   })

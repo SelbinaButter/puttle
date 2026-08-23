@@ -56,9 +56,7 @@ interface AimDrag {
 }
 
 function usesCloseCamera(puzzle: PuzzleDefinition, ball: Vec2, allowed: boolean): boolean {
-  const dx = puzzle.hole.x - ball.x
-  const dy = puzzle.hole.y - ball.y
-  return allowed && Math.sqrt(dx * dx + dy * dy) < 10
+  return allowed && Math.hypot(puzzle.hole.x - ball.x, puzzle.hole.y - ball.y) < 10
 }
 
 function transformFor(
@@ -66,6 +64,7 @@ function transformFor(
   puzzle: PuzzleDefinition,
   ball: Vec2,
   allowCloseZoom: boolean,
+  corridorPoints: readonly Vec2[] = [],
   reviewCamera?: ReviewCamera,
 ): Transform {
   const fringe = puzzle.green.fringe + 0.8
@@ -95,11 +94,17 @@ function transformFor(
       Math.min(full.maximumY - worldHeight, reviewCamera.center.y - worldHeight / 2),
     )
   } else if (zoomed) {
-    const padding = 3.25
-    const centerX = (ball.x + puzzle.hole.x) / 2
-    const centerY = (ball.y + puzzle.hole.y) / 2
-    worldWidth = Math.max(8, Math.abs(dx) + padding * 2)
-    worldHeight = Math.max(8, Math.abs(dy) + padding * 2)
+    const corridorLength = Math.hypot(dx, dy)
+    const padding = Math.max(4.5, corridorLength * 0.16)
+    const framingPoints = [ball, puzzle.hole, ...corridorPoints]
+    const minimumX = Math.min(...framingPoints.map((point) => point.x))
+    const maximumX = Math.max(...framingPoints.map((point) => point.x))
+    const minimumY = Math.min(...framingPoints.map((point) => point.y))
+    const maximumY = Math.max(...framingPoints.map((point) => point.y))
+    const centerX = (minimumX + maximumX) / 2
+    const centerY = (minimumY + maximumY) / 2
+    worldWidth = Math.max(8, maximumX - minimumX + padding * 2)
+    worldHeight = Math.max(8, maximumY - minimumY + padding * 2)
     const canvasAspect = canvas.width / canvas.height
     if (worldWidth / worldHeight < canvasAspect) {
       worldWidth = worldHeight * canvasAspect
@@ -420,7 +425,8 @@ export function GreenCanvas(props: Props) {
       canvas,
       props.puzzle,
       props.ball,
-      !props.revealed && props.animationKind !== 'approach',
+      !props.revealed,
+      props.strokes.length === 0 ? props.approachPath : [],
       props.revealed ? reviewCamera : undefined,
     )
     transformRef.current = transform
@@ -736,7 +742,7 @@ export function GreenCanvas(props: Props) {
         data-solution-visible={Boolean(props.idealPath)}
         data-camera-mode={props.revealed && reviewCamera.zoom > 1
           ? 'review'
-          : usesCloseCamera(props.puzzle, props.ball, !props.revealed && props.animationKind !== 'approach') ? 'close' : 'full'}
+          : usesCloseCamera(props.puzzle, props.ball, !props.revealed) ? 'close' : 'full'}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

@@ -13,7 +13,10 @@
     "test:watch": "vitest",
     "test:generation": "vitest run test/generation",
     "test:browser": "playwright test",
-    "generate": "tsx scripts/generate.ts"
+    "generate": "tsx scripts/generate.ts",
+    "audit:archive": "tsx scripts/audit.ts",
+    "audit:determinism": "tsx scripts/replay.ts 60",
+    "review:archive": "tsx scripts/review.ts"
   },
   "dependencies": {
     "react": "18.3.1",

@@ -29,7 +29,7 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   }
   await page.evaluate(
     ({ roundDate, fingerprint, strokes }) => localStorage.setItem(
-      `puttle:round:v1:${roundDate}`,
+      `puttle:round:v2:${roundDate}`,
       JSON.stringify({ date: roundDate, puzzleFingerprint: fingerprint, strokes }),
     ),
     {
