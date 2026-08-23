@@ -154,6 +154,7 @@ function drawPath(
   if (path.length < 2) return
   context.beginPath()
   let began = false
+  let lastDrawn: Vec2 | undefined
   for (const point of path) {
     if (point.t > until) break
     const pixel = screen(point, transform)
@@ -161,6 +162,20 @@ function drawPath(
       context.moveTo(pixel.x, pixel.y)
       began = true
     } else {
+      context.lineTo(pixel.x, pixel.y)
+    }
+    lastDrawn = point
+  }
+  // Recorded paths are intentionally sparse. The animated ball is
+  // interpolated between those samples, so the partial trail must use the
+  // same interpolation or it visibly lags behind the ball at the handoff.
+  if (began && Number.isFinite(until)) {
+    const endpoint = interpolatedBall(path, until)
+    if (
+      endpoint &&
+      (!lastDrawn || endpoint.x !== lastDrawn.x || endpoint.y !== lastDrawn.y)
+    ) {
+      const pixel = screen(endpoint, transform)
       context.lineTo(pixel.x, pixel.y)
     }
   }
