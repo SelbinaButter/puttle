@@ -51,6 +51,8 @@ test('Stimp help explains the reading without moving it off center', async ({ pa
 
   const helpButton = page.getByRole('button', { name: 'What is Stimp?' })
   const tooltip = page.getByRole('tooltip')
+  await expect(helpButton).toHaveText('Stimp')
+  expect(await helpButton.evaluate((element) => getComputedStyle(element, '::after').borderBottomStyle)).toBe('dotted')
   await expect(tooltip).toBeHidden()
   await helpButton.focus()
   await expect(tooltip).toBeVisible()

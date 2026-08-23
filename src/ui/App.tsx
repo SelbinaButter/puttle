@@ -107,21 +107,19 @@ function StimpReadout({ stimp }: { stimp: number }) {
 
   return (
     <span className="stimp-readout">
-      <span>Green speed · {stimp.toFixed(1)} Stimp</span>
-      <span className="stimp-help">
-        <button
-          ref={buttonRef}
-          className="stimp-help-button"
-          type="button"
-          aria-label="What is Stimp?"
-          aria-describedby={open ? 'stimp-tooltip' : undefined}
-          onClick={() => setOpen(true)}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => { if (document.activeElement !== buttonRef.current) setOpen(false) }}
-        >?</button>
-      </span>
+      <span>Green speed · {stimp.toFixed(1)}</span>
+      <button
+        ref={buttonRef}
+        className="stimp-term"
+        type="button"
+        aria-label="What is Stimp?"
+        aria-describedby={open ? 'stimp-tooltip' : undefined}
+        onClick={() => setOpen(true)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => { if (document.activeElement !== buttonRef.current) setOpen(false) }}
+      >Stimp</button>
       {open && position && createPortal(
         <span
           className="stimp-tooltip"

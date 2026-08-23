@@ -38,11 +38,12 @@ button:disabled { cursor: default; opacity: .5; }
 .game-card { overflow: hidden; border: 1px solid rgba(232,244,218,.14); border-radius: 22px; background: rgba(9,28,18,.58); box-shadow: 0 28px 80px rgba(0,0,0,.28); backdrop-filter: blur(14px); }
 .readout-row { position: relative; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: center; padding: 13px 18px; color: #c9d8c5; border-bottom: 1px solid rgba(255,255,255,.09); font-size: .78rem; }
 .readout-distance { justify-self: start; }
-.stimp-readout { display: inline-flex; grid-column: 2; align-items: center; justify-self: center; gap: 5px; white-space: nowrap; }
-.stimp-help { display: inline-flex; }
-.stimp-help-button { display: grid; width: 16px; height: 16px; padding: 0; place-items: center; color: #dce6c4; border: 1px solid rgba(220,230,196,.55); border-radius: 50%; background: rgba(255,255,255,.04); font-size: .62rem; font-weight: 850; line-height: 1; }
-.stimp-help-button:hover { color: #152219; border-color: #e8dd9a; background: #e8dd9a; }
-.stimp-help-button:focus-visible { outline: 2px solid #e8dd9a; outline-offset: 2px; }
+.stimp-readout { display: inline-flex; grid-column: 2; align-items: baseline; justify-self: center; gap: .3em; white-space: nowrap; }
+.stimp-term { position: relative; padding: 0 0 1px; color: inherit; border: 0; background: transparent; line-height: inherit; }
+.stimp-term::after { position: absolute; right: 1px; bottom: 2px; left: 1px; border-bottom: 1px dotted rgba(225,231,196,.75); content: ''; }
+.stimp-term:hover { color: #f0e798; }
+.stimp-term:hover::after, .stimp-term:focus-visible::after { border-color: currentColor; }
+.stimp-term:focus-visible { color: #f0e798; outline: 1px solid #e8dd9a; outline-offset: 2px; border-radius: 2px; }
 .stimp-tooltip { position: fixed; z-index: 30; padding: 10px 12px; color: #e7eee0; border: 1px solid rgba(232,221,154,.3); border-radius: 9px; background: #0a2015; box-shadow: 0 10px 28px rgba(0,0,0,.4); font-size: .72rem; font-weight: 500; line-height: 1.45; pointer-events: none; text-align: left; transform: translateX(-50%); white-space: normal; }
 .stimp-tooltip-arrow { position: absolute; bottom: 100%; width: 8px; height: 8px; border-top: 1px solid rgba(232,221,154,.3); border-left: 1px solid rgba(232,221,154,.3); background: #0a2015; transform: translate(-50%, 5px) rotate(45deg); }
 .readout-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 16px; }
@@ -153,7 +154,6 @@ footer { padding: 17px 8px 0; color: #718b78; text-align: center; font-size: .7r
   .readout-row { gap: 6px 8px; padding: 8px 11px; font-size: .64rem; }
   .readout-distance { grid-column: 1; grid-row: 1; }
   .stimp-readout { grid-row: 1; }
-  .stimp-help-button { width: 15px; height: 15px; font-size: .58rem; }
   .stimp-tooltip { font-size: .68rem; }
   .readout-actions { display: contents; }
   .readout-status { grid-column: 3; grid-row: 1; justify-self: end; }
