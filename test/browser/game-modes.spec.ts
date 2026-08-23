@@ -84,6 +84,10 @@ test('archive, practice, and close-to-banner result flow work', async ({ page })
   const resultPanel = page.locator('.result-panel')
   await expect(resultPanel).toBeVisible()
   await expect(resultPanel).toHaveAttribute('aria-hidden', 'true')
+  await expect(resultPanel.locator('.secondary-button').first()).toHaveText(
+    'Show a makeable line',
+    { timeout: 15_000 },
+  )
   const resultPanelWhileOpen = await resultPanel.evaluate((element) => {
     const bounds = element.getBoundingClientRect()
     return { height: bounds.height, y: bounds.y + window.scrollY }

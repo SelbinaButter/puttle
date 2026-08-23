@@ -51,6 +51,10 @@ test('end-of-round actions do not retain desktop hover colors on touch devices',
   expect(resultDialogBounds).not.toBeNull()
   await expect(page.locator('.result-panel')).toBeVisible()
   const resultPanel = page.locator('.result-panel')
+  await expect(resultPanel.locator('.secondary-button').first()).toHaveText(
+    'Show a makeable line',
+    { timeout: 15_000 },
+  )
   const resultPanelWhileOpen = await resultPanel.evaluate((element) => {
     const bounds = element.getBoundingClientRect()
     return { height: bounds.height, y: bounds.y + window.scrollY }
