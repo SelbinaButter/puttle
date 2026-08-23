@@ -2,11 +2,14 @@ import { expect, test } from '@playwright/test'
 
 test('canvas aiming and pace language work together', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/')
+  await page.goto('/?archive=2026-01-01')
   await page.getByRole('button', { name: "Play today's green" }).click()
 
   const canvas = page.locator('.green-canvas.aiming')
   await expect(canvas).toBeVisible()
+  await canvas.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  }))
   const bounds = await canvas.boundingBox()
   expect(bounds).not.toBeNull()
   if (!bounds) return
