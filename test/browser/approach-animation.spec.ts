@@ -1,46 +1,41 @@
 import { expect, test } from '@playwright/test'
 import { TEST_PUZZLE } from '../fixtures/puzzle'
 
+interface ApproachCanvasState {
+  approachEndpoint?: { x: number; y: number }
+  ballCenter?: { x: number; y: number }
+  lastLinePoint?: { x: number; y: number }
+}
+
 declare global {
   interface Window {
-    __approachCanvas?: {
-      approachEndpoint?: { x: number; y: number }
-      ballCenter?: { x: number; y: number }
-      lastLinePoint?: { x: number; y: number }
-      lastArcCenter?: { x: number; y: number }
-    }
+    __approachCanvas?: ApproachCanvasState
   }
 }
 
 test('an archived approach ends with its trace attached to the stored ball', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('puttle:onboarding:v1', 'seen')
-    const state = window.__approachCanvas = {}
+    const state: ApproachCanvasState = window.__approachCanvas = {}
     const prototype = CanvasRenderingContext2D.prototype
     const lineTo = prototype.lineTo
     const arc = prototype.arc
     const stroke = prototype.stroke
-    const fill = prototype.fill
 
     prototype.lineTo = function (x, y) {
       state.lastLinePoint = { x, y }
       return lineTo.call(this, x, y)
     }
     prototype.arc = function (x, y, radius, startAngle, endAngle, counterclockwise) {
-      state.lastArcCenter = { x, y }
+      // The ball is the final arc drawn in each canvas frame.
+      state.ballCenter = { x, y }
       return arc.call(this, x, y, radius, startAngle, endAngle, counterclockwise)
     }
-    prototype.stroke = function (...args) {
+    prototype.stroke = function (path?: Path2D) {
       if (String(this.strokeStyle) === 'rgba(174, 201, 183, 0.72)') {
         state.approachEndpoint = state.lastLinePoint
       }
-      return Reflect.apply(stroke, this, args)
-    }
-    prototype.fill = function (...args) {
-      if (String(this.fillStyle) === '#fffef5') {
-        state.ballCenter = state.lastArcCenter
-      }
-      return Reflect.apply(fill, this, args)
+      return Reflect.apply(stroke, this, path ? [path] : [])
     }
   })
 
