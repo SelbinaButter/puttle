@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
 import { heightAt, puttInput, sampleSurface, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
 import { aimIndexFromDrag, aimIndexFromPoints, speedIndexFromDrag } from '../game/aim'
+import { alignApproachPathEndpoint } from '../game/approach'
 import type { PlayedStroke } from '../game/types'
 
 interface Props {
@@ -412,12 +413,13 @@ export function GreenCanvas(props: Props) {
     const ratio = window.devicePixelRatio || 1
     canvas.width = Math.round(bounds.width * ratio)
     canvas.height = Math.round(bounds.height * ratio)
+    const approachPath = alignApproachPathEndpoint(props.approachPath, props.ball)
     const transform = transformFor(
       canvas,
       props.puzzle,
       props.ball,
       !props.revealed,
-      props.strokes.length === 0 ? props.approachPath : [],
+      props.strokes.length === 0 ? approachPath : [],
       props.revealed ? reviewCamera : undefined,
     )
     const ballRadius = 5.25 * ratio
@@ -453,7 +455,7 @@ export function GreenCanvas(props: Props) {
     }
     drawPath(
       context,
-      props.approachPath,
+      approachPath,
       transform,
       'rgba(174, 201, 183, .72)',
       2.6 * ratio,
@@ -534,8 +536,9 @@ export function GreenCanvas(props: Props) {
     drawCup(context, hole, cupRadius, ratio)
     if (!closeCup) drawFlag(context, hole, ratio, brandMark)
 
-    const animatedBall = props.activePath
-      ? interpolatedBall(props.activePath, props.animationTime ?? 0)
+    const activePath = props.animationKind === 'approach' ? approachPath : props.activePath
+    const animatedBall = activePath
+      ? interpolatedBall(activePath, props.animationTime ?? 0)
       : props.ball
     if (animatedBall && !props.strokes.at(-1)?.holed) {
       const pixel = screen(animatedBall, transform)
