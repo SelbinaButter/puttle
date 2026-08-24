@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import {
   AIM_COUNT,
@@ -171,6 +171,25 @@ function idealLabel(solution?: PuzzleSolution): string | undefined {
     ? 'straight'
     : `${Math.abs(degrees).toFixed(1)}\u00b0 ${degrees < 0 ? 'left' : 'right'}`
   return `A makeable line: ${line}, ${speedLabel(solution.ideal.speedIndex)}`
+}
+
+function BrandMark({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="21.5" fill="currentColor" />
+      <circle cx="24" cy="24" r="5.5" fill="var(--mark-hole, #f4f0e6)" />
+      <path d="M4 34.5C13.5 34.5 16 14 28 14c6.2 0 10.1 4.2 15.8 4.2" fill="none" stroke="var(--mark-line, #dff15d)" strokeWidth="3.2" strokeLinecap="round" />
+      <circle cx="4.8" cy="34.5" r="3.2" fill="var(--mark-line, #dff15d)" />
+    </svg>
+  )
+}
+
+function StatGlyph() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M3 16V9.5M8 16V4M13 16v-7M18 16V6.5" />
+    </svg>
+  )
 }
 
 export default function App() {
@@ -456,24 +475,31 @@ export default function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <div>
-          <span className="eyebrow">{modeLabel}{puzzle ? ` \u00b7 #${puzzle.number}` : ''}</span>
-          <h1>{BRAND.displayTitle}</h1>
+        <div className="brand-lockup">
+          <BrandMark className="brand-mark" />
+          <div className="brand-copy">
+            <h1>{BRAND.displayTitle}</h1>
+            <span className="brand-rule" aria-hidden="true" />
+            <span className="brand-edition">Daily green<br />No. {puzzle?.number ?? '---'}</span>
+          </div>
         </div>
         <button className="stats-button" type="button" onClick={() => setShowStats(true)} aria-label="View statistics">
-          <span><b>{stats.currentStreak}</b> streak</span>
-          <span><b>{stats.history.length}</b> played</span>
+          <StatGlyph />
+          <span className="stats-copy"><b>{stats.currentStreak}</b> streak <i /> <b>{stats.history.length}</b> played</span>
         </button>
       </header>
 
       <div className={`mode-switcher ${mode !== 'daily' ? 'with-mode-action' : ''}`}>
-        <nav className="mode-tabs" aria-label="Game mode">
-          {(['daily', 'archive', 'practice'] as const).map((tab) => (
-            <button type="button" className={mode === tab ? 'active' : ''} aria-pressed={mode === tab} onClick={() => changeMode(tab)} key={tab}>
-              {tab === 'daily' ? 'Today' : tab === 'archive' ? 'Archive' : 'Practice'}
-            </button>
-          ))}
-        </nav>
+        <div className="mode-heading">
+          <span className="eyebrow"><i className="live-dot" />{modeLabel}{puzzle ? ` \u00b7 #${puzzle.number}` : ''}</span>
+          <nav className="mode-tabs" aria-label="Game mode">
+            {(['daily', 'archive', 'practice'] as const).map((tab) => (
+              <button type="button" className={mode === tab ? 'active' : ''} aria-pressed={mode === tab} onClick={() => changeMode(tab)} key={tab}>
+                {tab === 'daily' ? 'Today' : tab === 'archive' ? 'Archive' : 'Practice'}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {mode === 'archive' && (
           <div className="mode-panel archive-picker">
@@ -493,7 +519,7 @@ export default function App() {
       ) : (
         <section className="game-card">
           <div className="readout-row">
-            <span className="readout-distance">{formatFeet(distance)} to cup</span>
+            <span className="readout-distance"><i aria-hidden="true" />{formatFeet(distance)} <small>to cup</small></span>
             <StimpReadout stimp={puzzle.stimp} />
             <div className="readout-actions">
               {strokes.length === 0 && !finished && <button className="result-reopen approach-replay" type="button" disabled={animation?.kind === 'approach'} onClick={playApproach}>Watch approach again</button>}
@@ -568,17 +594,17 @@ export default function App() {
           ) : !finished ? (
             <div className="controls" aria-label="Putt controls">
               <label>
-                <span><b>Aim</b><output>{aimDegrees(aimIndex) > 0 ? '+' : ''}{aimDegrees(aimIndex).toFixed(1)}°</output></span>
-                <div className="slider-stepper"><button type="button" aria-label="Aim left one step" disabled={controlsDisabled || tapInAvailable || aimIndex === 0} onClick={() => setAimIndex((value) => value - 1)}>−</button><input type="range" min="0" max={AIM_COUNT - 1} step="1" value={aimIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setAimIndex(Number(event.target.value))} /><button type="button" aria-label="Aim right one step" disabled={controlsDisabled || tapInAvailable || aimIndex === AIM_COUNT - 1} onClick={() => setAimIndex((value) => value + 1)}>+</button></div>
+                <span><b>Aim <i>choose your line</i></b><output>{aimDegrees(aimIndex) > 0 ? '+' : ''}{aimDegrees(aimIndex).toFixed(1)}°</output></span>
+                <div className="slider-stepper"><button type="button" aria-label="Aim left one step" disabled={controlsDisabled || tapInAvailable || aimIndex === 0} onClick={() => setAimIndex((value) => value - 1)}>−</button><input style={{ '--range-progress': `${(aimIndex / (AIM_COUNT - 1)) * 100}%` } as CSSProperties} type="range" min="0" max={AIM_COUNT - 1} step="1" value={aimIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setAimIndex(Number(event.target.value))} /><button type="button" aria-label="Aim right one step" disabled={controlsDisabled || tapInAvailable || aimIndex === AIM_COUNT - 1} onClick={() => setAimIndex((value) => value + 1)}>+</button></div>
                 <small><span>15° left</span><span>Straight</span><span>15° right</span></small>
               </label>
               <label>
                 <span><b>Pace <i>flat-green finish</i></b><output>{speedLabel(speedIndex)}</output></span>
-                <div className="slider-stepper"><button type="button" aria-label="Softer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === 0} onClick={() => setSpeedIndex((value) => value - 1)}>−</button><input type="range" min="0" max={SPEED_COUNT - 1} step="1" value={speedIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setSpeedIndex(Number(event.target.value))} /><button type="button" aria-label="Firmer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === SPEED_COUNT - 1} onClick={() => setSpeedIndex((value) => value + 1)}>+</button></div>
+                <div className="slider-stepper"><button type="button" aria-label="Softer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === 0} onClick={() => setSpeedIndex((value) => value - 1)}>−</button><input style={{ '--range-progress': `${(speedIndex / (SPEED_COUNT - 1)) * 100}%` } as CSSProperties} type="range" min="0" max={SPEED_COUNT - 1} step="1" value={speedIndex} disabled={controlsDisabled || tapInAvailable} onChange={(event) => setSpeedIndex(Number(event.target.value))} /><button type="button" aria-label="Firmer one step" disabled={controlsDisabled || tapInAvailable || speedIndex === SPEED_COUNT - 1} onClick={() => setSpeedIndex((value) => value + 1)}>+</button></div>
                 <small><span>Soft</span><span>Firm</span></small>
               </label>
               <div className="stroke-actions">
-                {tapInAvailable ? <button className="tap-in-button" type="button" disabled={controlsDisabled} onClick={tapIn}>Tap in</button> : <button className="putt-button" type="button" disabled={controlsDisabled} onClick={startPutt}>{animation?.kind === 'putt' ? 'Rolling...' : animation?.kind === 'approach' ? 'Reading...' : 'Putt'}</button>}
+                {tapInAvailable ? <button className="tap-in-button" type="button" disabled={controlsDisabled} onClick={tapIn}>Tap in <span aria-hidden="true">→</span></button> : <button className="putt-button" type="button" disabled={controlsDisabled} onClick={startPutt}><span>{animation?.kind === 'putt' ? 'Rolling...' : animation?.kind === 'approach' ? 'Reading...' : 'Putt'}</span><i aria-hidden="true">→</i></button>}
               </div>
             </div>
           ) : null}
@@ -593,14 +619,14 @@ export default function App() {
       </footer>
 
       {showOnboarding && (
-        <div className="intro-backdrop"><section className="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title"><span className="eyebrow">How to play</span><h2 id="intro-title">Read it. Roll it. Hole it.</h2><ol><li><b>1</b><span><strong>Watch the approach</strong>See how the ball releases across the green before your first putt.</span></li><li><b>2</b><span><strong>Choose line and pace</strong>Aim left or right, then choose whether the ball should finish short or roll past on a flat green.</span></li><li><b>3</b><span><strong>Finish in five</strong>Every trace adds information. Inside one foot, a safe tap-in adds the final stroke.</span></li></ol><button type="button" onClick={closeOnboarding}>Play today's green</button></section></div>
+        <div className="intro-backdrop"><section className="intro-card" role="dialog" aria-modal="true" aria-labelledby="intro-title"><div className="intro-brand"><BrandMark className="intro-mark" /><span>PUTTLE<br /><small>Daily green</small></span></div><span className="eyebrow">How to play</span><h2 id="intro-title">Read it. Roll it. Hole it.</h2><ol><li><b>01</b><span><strong>Watch the approach</strong>See how the ball releases across the green before your first putt.</span></li><li><b>02</b><span><strong>Choose line and pace</strong>Aim left or right, then choose whether the ball should finish short or roll past on a flat green.</span></li><li><b>03</b><span><strong>Finish in five</strong>Every trace adds information. Inside one foot, a safe tap-in adds the final stroke.</span></li></ol><button type="button" onClick={closeOnboarding}><span>Play today's green</span><i aria-hidden="true">→</i></button></section></div>
       )}
 
       {showStats && (
         <div className="intro-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowStats(false) }}>
           <section className="stats-card" role="dialog" aria-modal="true" aria-labelledby="stats-title">
             <button className="win-close" type="button" aria-label="Close statistics" onClick={() => setShowStats(false)}>×</button>
-            <span className="eyebrow">Your record</span><h2 id="stats-title">Statistics</h2>
+            <div className="stats-title-row"><BrandMark className="stats-mark" /><div><span className="eyebrow">Your record</span><h2 id="stats-title">Statistics</h2></div></div>
             <div className="stats-summary"><span><b>{completedGames}</b>Played</span><span><b>{winPercent}</b>Win %</span><span><b>{stats.currentStreak}</b>Current</span><span><b>{stats.bestStreak}</b>Best</span></div>
             <h3>Score distribution</h3>
             <div className="histogram">{distributionKeys.map((key) => { const count = stats.distribution[key] ?? 0; return <div className="histogram-row" key={key}><b>{key}</b><span style={{ width: `${Math.max(9, (count / maximumDistribution) * 100)}%` }}>{count}</span></div> })}</div>

@@ -228,7 +228,7 @@ function drawContours(
     }
   }
 
-  context.strokeStyle = 'rgba(236, 249, 214, .38)'
+  context.strokeStyle = 'rgba(235, 240, 214, .34)'
   context.lineWidth = 1
   for (let levelIndex = 1; levelIndex < 9; levelIndex += 1) {
     const level = minimum + ((maximum - minimum) * levelIndex) / 9
@@ -272,8 +272,8 @@ function drawFallLineArrows(
   transform: Transform,
   ratio: number,
 ) {
-  context.strokeStyle = 'rgba(210, 235, 196, .55)'
-  context.fillStyle = 'rgba(210, 235, 196, .55)'
+  context.strokeStyle = 'rgba(223, 241, 93, .62)'
+  context.fillStyle = 'rgba(223, 241, 93, .62)'
   context.lineWidth = 1.2 * ratio
   for (let row = 1; row <= 4; row += 1) {
     for (let column = 1; column <= 5; column += 1) {
@@ -309,7 +309,7 @@ function drawCup(
   ratio: number,
 ) {
   context.save()
-  context.fillStyle = '#0b1810'
+  context.fillStyle = '#071912'
   context.beginPath()
   context.arc(center.x, center.y, radius * ratio, 0, Math.PI * 2)
   context.fill()
@@ -329,14 +329,14 @@ function drawFlag(
 
   // A centered flat outline keeps the thin pole readable without making it
   // look glossy or shifting its visual weight to either side.
-  context.strokeStyle = '#334b37'
+  context.strokeStyle = '#173328'
   context.lineWidth = 3 * ratio
   context.beginPath()
   context.moveTo(hole.x, base)
   context.lineTo(hole.x, top)
   context.stroke()
 
-  context.strokeStyle = '#eee9c9'
+  context.strokeStyle = '#f4f0e6'
   context.lineWidth = 1.6 * ratio
   context.beginPath()
   context.moveTo(hole.x, base)
@@ -346,8 +346,8 @@ function drawFlag(
   const flagTop = top + 2 * ratio
   const flagWidth = 25 * ratio
   const flagHeight = 15 * ratio
-  context.fillStyle = '#f3f1dc'
-  context.strokeStyle = '#87947d'
+  context.fillStyle = '#f4f0e6'
+  context.strokeStyle = '#173328'
   context.lineWidth = 0.8 * ratio
   context.fillRect(hole.x, flagTop, flagWidth, flagHeight)
   context.strokeRect(hole.x, flagTop, flagWidth, flagHeight)
@@ -364,7 +364,7 @@ function drawFlag(
       markSize,
     )
   } else {
-    context.fillStyle = '#0b4a2d'
+    context.fillStyle = '#123d2e'
     context.font = `800 ${9 * ratio}px Georgia, 'Times New Roman', serif`
     context.textAlign = 'center'
     context.textBaseline = 'middle'
@@ -434,18 +434,37 @@ export function GreenCanvas(props: Props) {
     )
 
     context.clearRect(0, 0, canvas.width, canvas.height)
-    context.fillStyle = '#345c3b'
+    context.fillStyle = '#254f39'
     context.fillRect(0, 0, canvas.width, canvas.height)
-    context.fillStyle = '#4b8251'
+    context.fillStyle = '#4f855e'
     context.beginPath()
     context.roundRect(
       greenTopLeft.x,
       greenTopLeft.y,
       greenBottomRight.x - greenTopLeft.x,
       greenBottomRight.y - greenTopLeft.y,
-      28 * ratio,
+      16 * ratio,
     )
     context.fill()
+
+    // Quiet mowing bands add scale without suggesting any hidden slope.
+    // They are purely screen-space ornament and reveal no puzzle information.
+    context.save()
+    context.beginPath()
+    context.roundRect(
+      greenTopLeft.x,
+      greenTopLeft.y,
+      greenBottomRight.x - greenTopLeft.x,
+      greenBottomRight.y - greenTopLeft.y,
+      16 * ratio,
+    )
+    context.clip()
+    const bandHeight = Math.max(34 * ratio, (greenBottomRight.y - greenTopLeft.y) / 9)
+    context.fillStyle = 'rgba(244, 240, 230, .026)'
+    for (let y = greenTopLeft.y; y < greenBottomRight.y; y += bandHeight * 2) {
+      context.fillRect(greenTopLeft.x, y, greenBottomRight.x - greenTopLeft.x, bandHeight)
+    }
+    context.restore()
 
     // Slope-derived drawing belongs strictly behind the end-of-round gate.
     // Pre-reveal rendering must never use heightAt/sampleSurface.
@@ -457,27 +476,27 @@ export function GreenCanvas(props: Props) {
       context,
       approachPath,
       transform,
-      'rgba(174, 201, 183, .72)',
+      'rgba(230, 237, 224, .68)',
       2.6 * ratio,
       props.approachTrailUntil,
     )
     for (const path of props.revealPaths) {
-      drawPath(context, path, transform, 'rgba(239, 224, 129, .18)', 3 * ratio)
+      drawPath(context, path, transform, 'rgba(223, 241, 93, .18)', 3 * ratio)
     }
     props.strokes.forEach((stroke, index) => {
-      const palette = ['#b9dcff', '#ffc979', '#e7a7ff', '#e6ee8b']
+      const palette = ['#c7e4ff', '#ffcd77', '#e7b5ef', '#dff15d']
       drawPath(context, stroke.path, transform, palette[index % palette.length], 2.25 * ratio)
     })
     if (props.idealPath) {
-      drawPath(context, props.idealPath, transform, '#fff09a', 4.5 * ratio)
+      drawPath(context, props.idealPath, transform, '#eaf982', 4.5 * ratio)
       const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]
       if (labelPoint && props.idealLabel) {
         const pixel = screen(labelPoint, transform)
         context.font = `700 ${11 * ratio}px Inter, sans-serif`
-        context.fillStyle = 'rgba(8, 25, 15, .9)'
+        context.fillStyle = 'rgba(8, 31, 23, .94)'
         const width = context.measureText(props.idealLabel).width + 14 * ratio
         context.fillRect(pixel.x + 8 * ratio, pixel.y - 20 * ratio, width, 18 * ratio)
-        context.fillStyle = '#fff3ad'
+        context.fillStyle = '#eaf982'
         context.fillText(props.idealLabel, pixel.x + 15 * ratio, pixel.y - 7 * ratio)
       }
     }
@@ -505,13 +524,13 @@ export function GreenCanvas(props: Props) {
       context.beginPath()
       context.moveTo(start.x, start.y)
       context.lineTo(end.x, end.y)
-      context.strokeStyle = 'rgba(255,255,255,.7)'
+      context.strokeStyle = 'rgba(244,240,230,.72)'
       context.lineWidth = (transform.zoomed ? 1.65 : 1.2) * ratio
       context.stroke()
       context.setLineDash([])
       if (props.aimEnabled) {
-        context.fillStyle = 'rgba(255, 244, 166, .92)'
-        context.strokeStyle = 'rgba(28, 48, 32, .72)'
+        context.fillStyle = '#dff15d'
+        context.strokeStyle = 'rgba(18, 61, 46, .82)'
         context.lineWidth = 1.4 * ratio
         context.beginPath()
         context.arc(end.x, end.y, ballRadius, 0, Math.PI * 2)
@@ -525,7 +544,7 @@ export function GreenCanvas(props: Props) {
         context,
         props.activePath,
         transform,
-        '#ffffff',
+        '#f4f0e6',
         2.5 * ratio,
         props.animationTime,
       )
@@ -545,7 +564,7 @@ export function GreenCanvas(props: Props) {
       context.shadowColor = 'rgba(0,0,0,.35)'
       context.shadowBlur = 5 * ratio
       context.shadowOffsetY = 2 * ratio
-      context.fillStyle = '#fffef5'
+      context.fillStyle = '#fffdf5'
       context.beginPath()
       context.arc(pixel.x, pixel.y, ballRadius, 0, Math.PI * 2)
       context.fill()

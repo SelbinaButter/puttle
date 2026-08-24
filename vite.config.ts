@@ -11,8 +11,8 @@ function brandedAssets(siteUrl: string): Plugin {
     description: BRAND.tagline,
     start_url: './',
     display: 'standalone',
-    background_color: '#10271c',
-    theme_color: '#10271c',
+    background_color: '#eeeade',
+    theme_color: '#eeeade',
     icons: [
       { src: './icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: './icon-512.png', sizes: '512x512', type: 'image/png' },

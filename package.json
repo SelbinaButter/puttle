@@ -16,7 +16,8 @@
     "generate": "tsx scripts/generate.ts",
     "audit:archive": "tsx scripts/audit.ts",
     "audit:determinism": "tsx scripts/replay.ts 60",
-    "review:archive": "tsx scripts/review.ts"
+    "review:archive": "tsx scripts/review.ts",
+    "brand-assets": "tsx scripts/generate-brand-assets.ts"
   },
   "dependencies": {
     "react": "18.3.1",
