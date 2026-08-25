@@ -237,7 +237,10 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.BASE_URL}puzzles/index.json`, { signal: controller.signal })
+    fetch(`${import.meta.env.BASE_URL}puzzles/index.json`, {
+      cache: 'no-cache',
+      signal: controller.signal,
+    })
       .then((response) => response.ok ? response.json() as Promise<PuzzleIndex> : { dates: [today] })
       .then((index) => {
         const dates = [...new Set(index.dates)].filter((date) => date <= today).sort()
@@ -249,7 +252,10 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${import.meta.env.BASE_URL}puzzles/${selectedDate}.json`, { signal: controller.signal })
+    fetch(`${import.meta.env.BASE_URL}puzzles/${selectedDate}.json`, {
+      cache: 'no-cache',
+      signal: controller.signal,
+    })
       .then((response) => {
         if (!response.ok) throw new Error(`That green is not in the archive yet (${response.status}).`)
         if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('That green is not in the archive yet.')

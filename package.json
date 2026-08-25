@@ -14,6 +14,7 @@
     "test:generation": "vitest run test/generation",
     "test:browser": "playwright test",
     "generate": "tsx scripts/generate.ts",
+    "audit:layouts": "tsx scripts/audit-layouts.ts",
     "audit:archive": "tsx scripts/audit.ts",
     "audit:determinism": "tsx scripts/replay.ts 60",
     "review:archive": "tsx scripts/review.ts"

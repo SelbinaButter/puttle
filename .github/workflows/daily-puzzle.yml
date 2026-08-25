@@ -29,18 +29,33 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Restore validated puzzle archive
+      # Keep generated future dates between scheduled runs, but never allow a
+      # cache entry to overwrite the archive committed in the checkout. The
+      # compatibility hash also prevents puzzles from an older generator or
+      # simulation from leaking into a new archive build.
+      - name: Restore compatible generated archive
         uses: actions/cache@v4
         with:
           path: |
-            public/puzzles
+            .archive-cache/puzzles
             .generated/solutions
-          key: puzzle-archive-v2-${{ github.run_id }}
-          restore-keys: puzzle-archive-v2-
+          key: puzzle-archive-v3-${{ hashFiles('scripts/lib/*.ts', 'src/sim/*.ts', 'public/puzzles/*.json') }}-${{ github.run_id }}
+          restore-keys: |
+            puzzle-archive-v3-${{ hashFiles('scripts/lib/*.ts', 'src/sim/*.ts', 'public/puzzles/*.json') }}-
+      - name: Add cached dates missing from the checkout
+        run: |
+          mkdir -p .archive-cache/puzzles public/puzzles
+          find .archive-cache/puzzles -maxdepth 1 -type f -name '*.json' -print0 | while IFS= read -r -d '' source; do
+            target="public/puzzles/$(basename "$source")"
+            if [ ! -e "$target" ]; then cp "$source" "$target"; fi
+          done
       - name: Generate through tomorrow for local-midnight releases
         run: |
           tomorrow="$(node -p 'new Date(Date.now() + 86400000).toISOString().slice(0, 10)')"
           npx tsx scripts/generate.ts --from 2026-01-01 --through "$tomorrow" --missing
+          cp -a public/puzzles/. .archive-cache/puzzles/
+      - name: Audit deployed archive layouts
+        run: npm run audit:layouts
       - name: Verify the local-time release window is in the archive
         run: |
           today="$(date -u +%F)"
