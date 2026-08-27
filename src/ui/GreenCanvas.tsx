@@ -413,7 +413,10 @@ export function GreenCanvas(props: Props) {
     const ratio = window.devicePixelRatio || 1
     canvas.width = Math.round(bounds.width * ratio)
     canvas.height = Math.round(bounds.height * ratio)
-    const approachPath = alignApproachPathEndpoint(props.approachPath, props.ball)
+    // The approach establishes the puzzle's original ball position. Do not
+    // re-anchor it to the player's current position after each putt, or the
+    // review screen turns it into an unrelated curved trace across the green.
+    const approachPath = alignApproachPathEndpoint(props.approachPath, props.puzzle.ball)
     const transform = transformFor(
       canvas,
       props.puzzle,
@@ -470,16 +473,6 @@ export function GreenCanvas(props: Props) {
     })
     if (props.idealPath) {
       drawPath(context, props.idealPath, transform, '#fff09a', 4.5 * ratio)
-      const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]
-      if (labelPoint && props.idealLabel) {
-        const pixel = screen(labelPoint, transform)
-        context.font = `700 ${11 * ratio}px Inter, sans-serif`
-        context.fillStyle = 'rgba(8, 25, 15, .9)'
-        const width = context.measureText(props.idealLabel).width + 14 * ratio
-        context.fillRect(pixel.x + 8 * ratio, pixel.y - 20 * ratio, width, 18 * ratio)
-        context.fillStyle = '#fff3ad'
-        context.fillText(props.idealLabel, pixel.x + 15 * ratio, pixel.y - 7 * ratio)
-      }
     }
 
     const input = puttInput(
@@ -550,6 +543,22 @@ export function GreenCanvas(props: Props) {
       context.arc(pixel.x, pixel.y, ballRadius, 0, Math.PI * 2)
       context.fill()
       context.shadowColor = 'transparent'
+    }
+
+    // Keep the solution annotation above course features. The solution path
+    // itself still passes naturally beneath the cup, but its label must remain
+    // readable when the early part of a short makeable line overlaps the hole.
+    if (props.idealPath && props.idealLabel) {
+      const labelPoint = props.idealPath[Math.min(2, props.idealPath.length - 1)]
+      if (labelPoint) {
+        const pixel = screen(labelPoint, transform)
+        context.font = `700 ${11 * ratio}px Inter, sans-serif`
+        context.fillStyle = 'rgba(8, 25, 15, .9)'
+        const width = context.measureText(props.idealLabel).width + 14 * ratio
+        context.fillRect(pixel.x + 8 * ratio, pixel.y - 20 * ratio, width, 18 * ratio)
+        context.fillStyle = '#fff3ad'
+        context.fillText(props.idealLabel, pixel.x + 15 * ratio, pixel.y - 7 * ratio)
+      }
     }
   }, [props, resizeTick, reviewCamera, brandMark])
 

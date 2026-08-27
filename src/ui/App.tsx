@@ -128,7 +128,7 @@ function StimpReadout({ stimp }: { stimp: number }) {
           style={{ left: position.left, top: position.top, width: position.width }}
         >
           <span className="stimp-tooltip-arrow" style={{ left: position.arrowLeft }} aria-hidden="true" />
-          Stimp is the distance, in feet, a ball rolls on a level green when released from a standard Stimpmeter. A 10.0 reading means about 10 feet in that test; higher numbers are faster, so putts roll farther and feel more influence from the slope.
+          Stimp measures green speed. A ball is rolled down a standardized ramp (a Stimpmeter), and the distance it travels in feet is the Stimp rating. A Stimp of 10 means it rolled 10 feet. Higher numbers mean faster greens.
         </span>,
         document.body,
       )}

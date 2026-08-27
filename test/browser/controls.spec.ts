@@ -59,8 +59,8 @@ test('Stimp help explains the reading without moving it off center', async ({ pa
   await expect(tooltip).toBeHidden()
   await helpButton.focus()
   await expect(tooltip).toBeVisible()
-  await expect(tooltip).toContainText('distance, in feet')
-  await expect(tooltip).toContainText('higher numbers are faster')
+  await expect(tooltip).toContainText('Stimp measures green speed')
+  await expect(tooltip).toContainText('Higher numbers mean faster greens')
   expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true)
 })
 
