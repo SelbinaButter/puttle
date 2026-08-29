@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react'
-import { heightAt, puttInput, sampleSurface, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
+import { HOLE_RADIUS_FT, heightAt, puttInput, sampleSurface, type PathPoint, type PuzzleDefinition, type Vec2 } from '../sim'
 import { aimIndexFromDrag, aimIndexFromPoints, speedIndexFromDrag } from '../game/aim'
 import { alignApproachPathEndpoint } from '../game/approach'
 import type { PlayedStroke } from '../game/types'
+import { labelLayout } from '../game/canvasLayout'
 
 interface Props {
   puzzle: PuzzleDefinition
@@ -56,8 +57,24 @@ interface AimDrag {
   relative: boolean
 }
 
+// A regulation ball is 1.68 inches in diameter. Dividing by 24 converts that
+// diameter in inches directly to a radius in feet.
+const BALL_RADIUS_FT = 1.68 / 24
+const CLOSE_CAMERA_DISTANCE_FT = 10
+
 function usesCloseCamera(puzzle: PuzzleDefinition, ball: Vec2, allowed: boolean): boolean {
-  return allowed && Math.hypot(puzzle.hole.x - ball.x, puzzle.hole.y - ball.y) < 10
+  return allowed && Math.hypot(puzzle.hole.x - ball.x, puzzle.hole.y - ball.y) < CLOSE_CAMERA_DISTANCE_FT
+}
+
+function fixedCloseCameraBall(start: Vec2, hole: Vec2): Vec2 {
+  const dx = start.x - hole.x
+  const dy = start.y - hole.y
+  const distance = Math.hypot(dx, dy)
+  if (distance === 0) return { x: hole.x - CLOSE_CAMERA_DISTANCE_FT, y: hole.y }
+  return {
+    x: hole.x + (dx / distance) * CLOSE_CAMERA_DISTANCE_FT,
+    y: hole.y + (dy / distance) * CLOSE_CAMERA_DISTANCE_FT,
+  }
 }
 
 function transformFor(
@@ -67,6 +84,7 @@ function transformFor(
   allowCloseZoom: boolean,
   corridorPoints: readonly Vec2[] = [],
   reviewCamera?: ReviewCamera,
+  forceCloseZoom = false,
 ): Transform {
   const fringe = puzzle.green.fringe + 0.8
   const full = {
@@ -77,7 +95,9 @@ function transformFor(
   }
   const dx = puzzle.hole.x - ball.x
   const dy = puzzle.hole.y - ball.y
-  const zoomed = usesCloseCamera(puzzle, ball, allowCloseZoom)
+  const zoomed = allowCloseZoom && (
+    forceCloseZoom || usesCloseCamera(puzzle, ball, true)
+  )
   let originX = full.minimumX
   let originY = full.minimumY
   let worldWidth = full.maximumX - full.minimumX
@@ -205,6 +225,17 @@ function interpolatedBall(path: PathPoint[], time: number): Vec2 | undefined {
   return path[path.length - 1]
 }
 
+function puttNeedsCloseUp(path: PathPoint[], time: number, hole: Vec2): boolean {
+  const current = interpolatedBall(path, time)
+  if (current && Math.hypot(hole.x - current.x, hole.y - current.y) < CLOSE_CAMERA_DISTANCE_FT) {
+    return true
+  }
+  return path.some((point) => (
+    point.t <= time &&
+    Math.hypot(hole.x - point.x, hole.y - point.y) < CLOSE_CAMERA_DISTANCE_FT
+  ))
+}
+
 function drawContours(
   context: CanvasRenderingContext2D,
   puzzle: PuzzleDefinition,
@@ -311,8 +342,47 @@ function drawCup(
   context.save()
   context.fillStyle = '#0b1810'
   context.beginPath()
-  context.arc(center.x, center.y, radius * ratio, 0, Math.PI * 2)
+  context.arc(center.x, center.y, radius, 0, Math.PI * 2)
   context.fill()
+
+  const inset = Math.max(0, radius - 0.45 * ratio)
+  if (inset > 0) {
+    const depth = context.createRadialGradient(
+      center.x - radius * 0.3,
+      center.y - radius * 0.38,
+      radius * 0.08,
+      center.x,
+      center.y,
+      inset,
+    )
+    depth.addColorStop(0, '#26382b')
+    depth.addColorStop(0.5, '#142219')
+    depth.addColorStop(1, '#07100b')
+    context.fillStyle = depth
+    context.beginPath()
+    context.arc(center.x, center.y, inset, 0, Math.PI * 2)
+    context.fill()
+  }
+
+  context.lineCap = 'round'
+  // Show the pale liner in every camera. The shared legibility scale keeps it
+  // readable even in the full-green view, so switching back to a flat black
+  // marker there only made the cup appear larger and stylistically unrelated.
+  const linerWidth = Math.min(1.35 * ratio, Math.max(0.8 * ratio, radius * 0.16))
+  const linerRadius = Math.max(0, radius - 0.8 * ratio - linerWidth / 2)
+  if (linerRadius > 0) {
+    context.strokeStyle = 'rgba(229, 232, 214, .82)'
+    context.lineWidth = linerWidth
+    context.beginPath()
+    context.arc(center.x, center.y, linerRadius, 0, Math.PI * 2)
+    context.stroke()
+
+    context.strokeStyle = 'rgba(64, 76, 65, .42)'
+    context.lineWidth = 0.45 * ratio
+    context.beginPath()
+    context.arc(center.x, center.y, linerRadius - linerWidth * 0.55, 0, Math.PI)
+    context.stroke()
+  }
   context.restore()
 }
 
@@ -417,18 +487,44 @@ export function GreenCanvas(props: Props) {
     // re-anchor it to the player's current position after each putt, or the
     // review screen turns it into an unrelated curved trace across the green.
     const approachPath = alignApproachPathEndpoint(props.approachPath, props.puzzle.ball)
+    const activePath = props.animationKind === 'approach' ? approachPath : props.activePath
+    const animatedBall = activePath
+      ? interpolatedBall(activePath, props.animationTime ?? 0)
+      : props.ball
+    const longPutt = Math.hypot(
+      props.puzzle.hole.x - props.ball.x,
+      props.puzzle.hole.y - props.ball.y,
+    ) >= CLOSE_CAMERA_DISTANCE_FT
+    const autoClosePutt = Boolean(
+      props.animationKind === 'putt' &&
+      longPutt &&
+      props.activePath &&
+      puttNeedsCloseUp(props.activePath, props.animationTime ?? 0, props.puzzle.hole),
+    )
+    // Once a long putt reaches the cup area, cut to one fixed frame based on
+    // its starting line. Following the animated ball here continuously changes
+    // both scale and center and can feel like a nauseating tracking zoom.
+    const cameraBall = autoClosePutt
+      ? fixedCloseCameraBall(props.ball, props.puzzle.hole)
+      : props.ball
     const transform = transformFor(
       canvas,
       props.puzzle,
-      props.ball,
+      cameraBall,
       !props.revealed,
-      props.strokes.length === 0 ? approachPath : [],
+      autoClosePutt ? [] : props.strokes.length === 0 ? approachPath : [],
       props.revealed ? reviewCamera : undefined,
+      autoClosePutt,
     )
-    const ballRadius = 5.25 * ratio
-    const cupRadius = transform.zoomed || (props.revealed && reviewCamera.zoom > 1)
-      ? 7.35
-      : 6.8
+    // Ball, cup, and projected ball share one feature scale and one legibility
+    // floor. A smaller close-view floor made the cup visibly shrink during the
+    // camera cut on mobile; with one floor, zoom can only preserve or enlarge
+    // the features while retaining their regulation 1.68:4.25 diameter ratio.
+    const minimumBallRadius = 2.5 * ratio
+    const featureScale = Math.max(transform.scale, minimumBallRadius / BALL_RADIUS_FT)
+    const ballRadius = BALL_RADIUS_FT * featureScale
+    const cupRadius = HOLE_RADIUS_FT * featureScale
+    const aimMarkerRadius = ballRadius
     transformRef.current = transform
     const greenTopLeft = screen({ x: 0, y: 0 }, transform)
     const greenBottomRight = screen(
@@ -507,7 +603,7 @@ export function GreenCanvas(props: Props) {
         context.strokeStyle = 'rgba(28, 48, 32, .72)'
         context.lineWidth = 1.4 * ratio
         context.beginPath()
-        context.arc(end.x, end.y, ballRadius, 0, Math.PI * 2)
+        context.arc(end.x, end.y, aimMarkerRadius, 0, Math.PI * 2)
         context.fill()
         context.stroke()
       }
@@ -525,14 +621,9 @@ export function GreenCanvas(props: Props) {
     }
 
     const hole = screen(props.puzzle.hole, transform)
-    const closeCup = input.distance <= 6
-    drawCup(context, hole, cupRadius, ratio)
+    const closeCup = transform.zoomed || (props.revealed && reviewCamera.zoom > 1) || input.distance <= 6
     if (!closeCup) drawFlag(context, hole, ratio, brandMark)
 
-    const activePath = props.animationKind === 'approach' ? approachPath : props.activePath
-    const animatedBall = activePath
-      ? interpolatedBall(activePath, props.animationTime ?? 0)
-      : props.ball
     if (animatedBall && !props.strokes.at(-1)?.holed) {
       const pixel = screen(animatedBall, transform)
       context.shadowColor = 'rgba(0,0,0,.35)'
@@ -545,6 +636,11 @@ export function GreenCanvas(props: Props) {
       context.shadowColor = 'transparent'
     }
 
+    // Keep the actual aperture visible as the ball passes. Previously the
+    // oversized ball was painted over the cup, which made nearby misses look
+    // as though they had disappeared into it in the full-green camera.
+    drawCup(context, hole, cupRadius, ratio)
+
     // Keep the solution annotation above course features. The solution path
     // itself still passes naturally beneath the cup, but its label must remain
     // readable when the early part of a short makeable line overlaps the hole.
@@ -553,11 +649,22 @@ export function GreenCanvas(props: Props) {
       if (labelPoint) {
         const pixel = screen(labelPoint, transform)
         context.font = `700 ${11 * ratio}px Inter, sans-serif`
+        const layout = labelLayout(
+          canvas.width,
+          canvas.height,
+          pixel,
+          context.measureText(props.idealLabel).width,
+          ratio,
+        )
         context.fillStyle = 'rgba(8, 25, 15, .9)'
-        const width = context.measureText(props.idealLabel).width + 14 * ratio
-        context.fillRect(pixel.x + 8 * ratio, pixel.y - 20 * ratio, width, 18 * ratio)
+        context.fillRect(layout.left, layout.top, layout.width, layout.height)
+        context.save()
+        context.beginPath()
+        context.rect(layout.left, layout.top, layout.width, layout.height)
+        context.clip()
         context.fillStyle = '#fff3ad'
-        context.fillText(props.idealLabel, pixel.x + 15 * ratio, pixel.y - 7 * ratio)
+        context.fillText(props.idealLabel, layout.textX, layout.textY)
+        context.restore()
       }
     }
   }, [props, resizeTick, reviewCamera, brandMark])
@@ -734,6 +841,16 @@ export function GreenCanvas(props: Props) {
     if (pointers.current.size < 2) lastPinchDistance.current = undefined
   }
 
+  const showingPuttCloseUp = Boolean(
+    props.animationKind === 'putt' &&
+    Math.hypot(
+      props.puzzle.hole.x - props.ball.x,
+      props.puzzle.hole.y - props.ball.y,
+    ) >= CLOSE_CAMERA_DISTANCE_FT &&
+    props.activePath &&
+    puttNeedsCloseUp(props.activePath, props.animationTime ?? 0, props.puzzle.hole),
+  )
+
   return (
     <>
       <canvas
@@ -743,7 +860,9 @@ export function GreenCanvas(props: Props) {
         data-solution-visible={Boolean(props.idealPath)}
         data-camera-mode={props.revealed && reviewCamera.zoom > 1
           ? 'review'
-          : usesCloseCamera(props.puzzle, props.ball, !props.revealed) ? 'close' : 'full'}
+          : showingPuttCloseUp || usesCloseCamera(props.puzzle, props.ball, !props.revealed)
+            ? 'close'
+            : 'full'}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

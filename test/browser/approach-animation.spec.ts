@@ -20,17 +20,25 @@ test('an archived approach ends with its trace attached to the stored ball', asy
     const prototype = CanvasRenderingContext2D.prototype
     const lineTo = prototype.lineTo
     const arc = prototype.arc
+    const fill = prototype.fill
     const stroke = prototype.stroke
+    let lastArcCenter: { x: number; y: number } | undefined
 
     prototype.lineTo = function (x, y) {
       state.lastLinePoint = { x, y }
       return lineTo.call(this, x, y)
     }
     prototype.arc = function (x, y, radius, startAngle, endAngle, counterclockwise) {
-      // The ball is the final arc drawn in each canvas frame.
-      state.ballCenter = { x, y }
+      lastArcCenter = { x, y }
       return arc.call(this, x, y, radius, startAngle, endAngle, counterclockwise)
     }
+    prototype.fill = (function (
+      this: CanvasRenderingContext2D,
+      ...args: unknown[]
+    ) {
+      if (String(this.fillStyle) === '#fffef5') state.ballCenter = lastArcCenter
+      return Reflect.apply(fill, this, args)
+    }) as typeof prototype.fill
     prototype.stroke = function (path?: Path2D) {
       if (String(this.strokeStyle) === 'rgba(174, 201, 183, 0.72)') {
         state.approachEndpoint = state.lastLinePoint
