@@ -41,6 +41,19 @@ interface ReviewCamera {
   center: Vec2
 }
 
+interface CameraGesture {
+  startDistance: number
+  startZoom: number
+  worldFocus: Vec2
+}
+
+interface LastTap {
+  time: number
+  position: Vec2
+  aimIndex?: number
+  speedIndex?: number
+}
+
 interface CanvasPositionEvent {
   currentTarget: HTMLCanvasElement
   clientX: number
@@ -61,6 +74,8 @@ interface AimDrag {
 // diameter in inches directly to a radius in feet.
 const BALL_RADIUS_FT = 1.68 / 24
 const CLOSE_CAMERA_DISTANCE_FT = 10
+const MAX_CAMERA_ZOOM = 4
+const TOUCH_CAMERA_HINT_KEY = 'puttle:camera-hint:v1'
 
 function usesCloseCamera(puzzle: PuzzleDefinition, ball: Vec2, allowed: boolean): boolean {
   return allowed && Math.hypot(puzzle.hole.x - ball.x, puzzle.hole.y - ball.y) < CLOSE_CAMERA_DISTANCE_FT
@@ -447,10 +462,18 @@ export function GreenCanvas(props: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const transformRef = useRef<Transform>()
   const pointers = useRef(new Map<number, Vec2>())
+  const pointerStarts = useRef(new Map<number, Vec2>())
   const aimDrag = useRef<AimDrag>()
-  const lastPinchDistance = useRef<number>()
+  const cameraGesture = useRef<CameraGesture>()
+  const suppressAimUntilPointersClear = useRef(false)
+  const lastTap = useRef<LastTap>()
+  const touchHintSeen = useRef(false)
+  const touchHintTimer = useRef<ReturnType<typeof setTimeout>>()
+  const zoomIndicatorTimer = useRef<ReturnType<typeof setTimeout>>()
   const [brandMark, setBrandMark] = useState<HTMLImageElement>()
   const [resizeTick, setResizeTick] = useState(0)
+  const [showTouchHint, setShowTouchHint] = useState(false)
+  const [showZoomIndicator, setShowZoomIndicator] = useState(false)
   const [reviewCamera, setReviewCamera] = useState<ReviewCamera>({
     zoom: 1,
     center: { ...props.puzzle.hole },
@@ -463,6 +486,18 @@ export function GreenCanvas(props: Props) {
     image.onload = () => setBrandMark(image)
     return () => {
       image.onload = null
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      touchHintSeen.current = localStorage.getItem(TOUCH_CAMERA_HINT_KEY) === 'seen'
+    } catch {
+      touchHintSeen.current = false
+    }
+    return () => {
+      if (touchHintTimer.current) clearTimeout(touchHintTimer.current)
+      if (zoomIndicatorTimer.current) clearTimeout(zoomIndicatorTimer.current)
     }
   }, [])
 
@@ -513,7 +548,7 @@ export function GreenCanvas(props: Props) {
       cameraBall,
       !props.revealed,
       autoClosePutt ? [] : props.strokes.length === 0 ? approachPath : [],
-      props.revealed ? reviewCamera : undefined,
+      reviewCamera.zoom > 1 ? reviewCamera : undefined,
       autoClosePutt,
     )
     // Ball, cup, and projected ball share one feature scale and one legibility
@@ -743,33 +778,99 @@ export function GreenCanvas(props: Props) {
       : reviewCamera.center
   }
 
-  const setReviewZoom = (nextZoom: number, focus?: Vec2) => {
-    const zoom = Math.max(1, Math.min(4, nextZoom))
-    setReviewCamera((camera) => ({
+  const showTouchCameraHint = (pointerType: string) => {
+    if (pointerType !== 'touch' || touchHintSeen.current) return
+    touchHintSeen.current = true
+    try {
+      localStorage.setItem(TOUCH_CAMERA_HINT_KEY, 'seen')
+    } catch {
+      // The hint can still be shown when storage is unavailable.
+    }
+    setShowTouchHint(true)
+    if (touchHintTimer.current) clearTimeout(touchHintTimer.current)
+    touchHintTimer.current = setTimeout(() => setShowTouchHint(false), 4200)
+  }
+
+  const flashZoomIndicator = () => {
+    setShowZoomIndicator(true)
+    if (zoomIndicatorTimer.current) clearTimeout(zoomIndicatorTimer.current)
+    zoomIndicatorTimer.current = setTimeout(() => setShowZoomIndicator(false), 900)
+  }
+
+  const worldAtPixel = (pixel: Vec2, transform: Transform): Vec2 => ({
+    x: transform.originX + (pixel.x - transform.offsetX) / transform.scale,
+    y: transform.originY + (pixel.y - transform.offsetY) / transform.scale,
+  })
+
+  const cameraCenteredAtPixel = (zoom: number, worldFocus: Vec2, pixelFocus: Vec2): ReviewCamera => {
+    const canvas = canvasRef.current
+    if (!canvas || zoom <= 1) return { zoom: 1, center: { ...props.puzzle.hole } }
+    const fringe = props.puzzle.green.fringe + 0.8
+    const worldWidth = (props.puzzle.green.width + fringe * 2) / zoom
+    const worldHeight = (props.puzzle.green.height + fringe * 2) / zoom
+    const scale = Math.min(canvas.width / worldWidth, canvas.height / worldHeight)
+    const offsetX = (canvas.width - worldWidth * scale) / 2
+    const offsetY = (canvas.height - worldHeight * scale) / 2
+    return {
       zoom,
-      center: zoom === 1 ? { ...props.puzzle.hole } : focus ?? actualReviewCenter() ?? camera.center,
-    }))
+      center: {
+        x: worldFocus.x - (pixelFocus.x - offsetX) / scale + worldWidth / 2,
+        y: worldFocus.y - (pixelFocus.y - offsetY) / scale + worldHeight / 2,
+      },
+    }
+  }
+
+  const setReviewZoom = (nextZoom: number, worldFocus?: Vec2, pixelFocus?: Vec2) => {
+    const zoom = Math.max(1, Math.min(MAX_CAMERA_ZOOM, nextZoom))
+    if (worldFocus && pixelFocus) {
+      setReviewCamera(cameraCenteredAtPixel(zoom, worldFocus, pixelFocus))
+    } else {
+      setReviewCamera((camera) => ({
+        zoom,
+        center: zoom === 1 ? { ...props.puzzle.hole } : worldFocus ?? actualReviewCenter() ?? camera.center,
+      }))
+    }
   }
 
   const handleWheel = (event: ReactWheelEvent<HTMLCanvasElement>) => {
-    if (!props.revealed) return
     event.preventDefault()
     const transform = transformRef.current
     const pixel = pointerPosition(event)
-    const focus = transform
-      ? {
-          x: transform.originX + (pixel.x - transform.offsetX) / transform.scale,
-          y: transform.originY + (pixel.y - transform.offsetY) / transform.scale,
-        }
-      : props.puzzle.hole
-    setReviewZoom(reviewCamera.zoom * (event.deltaY < 0 ? 1.22 : 1 / 1.22), focus)
+    const focus = transform ? worldAtPixel(pixel, transform) : props.puzzle.hole
+    setReviewZoom(reviewCamera.zoom * (event.deltaY < 0 ? 1.22 : 1 / 1.22), focus, pixel)
   }
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!props.revealed && props.aimEnabled) {
-      event.preventDefault()
-      event.currentTarget.setPointerCapture(event.pointerId)
-      const pixel = pointerPosition(event)
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    showTouchCameraHint(event.pointerType)
+    const pixel = pointerPosition(event)
+    pointers.current.set(event.pointerId, pixel)
+    pointerStarts.current.set(event.pointerId, pixel)
+
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()]
+      const transform = transformRef.current
+      if (!transform) return
+      const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      const fringe = props.puzzle.green.fringe + 0.8
+      const fullWidth = props.puzzle.green.width + fringe * 2
+      const fullHeight = props.puzzle.green.height + fringe * 2
+      cameraGesture.current = {
+        startDistance: Math.hypot(a.x - b.x, a.y - b.y),
+        startZoom: Math.max(
+          1,
+          Math.min(MAX_CAMERA_ZOOM, fullWidth / transform.worldWidth, fullHeight / transform.worldHeight),
+        ),
+        worldFocus: worldAtPixel(midpoint, transform),
+      }
+      aimDrag.current = undefined
+      suppressAimUntilPointersClear.current = true
+      lastTap.current = undefined
+      return
+    }
+
+    if (!props.revealed && props.aimEnabled && !suppressAimUntilPointersClear.current) {
       const bounds = event.currentTarget.getBoundingClientRect()
       const pixelRatio = event.currentTarget.width / bounds.width
       const transform = transformRef.current
@@ -790,29 +891,38 @@ export function GreenCanvas(props: Props) {
       if (!relative) updateAimFromPointer(pixel)
       return
     }
-    if (!props.revealed) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    pointers.current.set(event.pointerId, pointerPosition(event))
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()]
-      lastPinchDistance.current = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
-    }
   }
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const drag = aimDrag.current
-    if (drag?.pointerId === event.pointerId && props.aimEnabled) {
-      event.preventDefault()
-      const pixel = pointerPosition(event)
-      if (drag.relative) updateRelativeAim(drag, pixel)
-      else updateAimFromPointer(pixel)
-      updateSpeedFromPointer(drag, pixel)
-      return
-    }
-    if (!props.revealed || !pointers.current.has(event.pointerId)) return
+    if (!pointers.current.has(event.pointerId)) return
     const previous = pointers.current.get(event.pointerId) as Vec2
     const current = pointerPosition(event)
     pointers.current.set(event.pointerId, current)
+
+    const gesture = cameraGesture.current
+    if (gesture && pointers.current.size >= 2) {
+      event.preventDefault()
+      const [a, b] = [...pointers.current.values()]
+      const distance = Math.hypot(a.x - b.x, a.y - b.y)
+      const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      const zoom = Math.max(
+        1,
+        Math.min(MAX_CAMERA_ZOOM, gesture.startZoom * (distance / Math.max(1, gesture.startDistance))),
+      )
+      setReviewCamera(cameraCenteredAtPixel(zoom, gesture.worldFocus, midpoint))
+      flashZoomIndicator()
+      return
+    }
+
+    const drag = aimDrag.current
+    if (drag?.pointerId === event.pointerId && props.aimEnabled) {
+      event.preventDefault()
+      if (drag.relative) updateRelativeAim(drag, current)
+      else updateAimFromPointer(current)
+      updateSpeedFromPointer(drag, current)
+      return
+    }
+    if (!props.revealed || suppressAimUntilPointersClear.current) return
     const transform = transformRef.current
     if (!transform) return
 
@@ -825,20 +935,50 @@ export function GreenCanvas(props: Props) {
           y: center.y - (current.y - previous.y) / transform.scale,
         },
       }))
-    } else if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()]
-      const distance = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
-      if (lastPinchDistance.current && lastPinchDistance.current > 0) {
-        setReviewZoom(reviewCamera.zoom * (distance / lastPinchDistance.current))
-      }
-      lastPinchDistance.current = distance
     }
   }
 
   const handlePointerEnd = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (aimDrag.current?.pointerId === event.pointerId) aimDrag.current = undefined
+    const drag = aimDrag.current?.pointerId === event.pointerId ? aimDrag.current : undefined
+    const end = pointerPosition(event)
+    const start = pointerStarts.current.get(event.pointerId)
+    const wasCameraGesture = Boolean(cameraGesture.current || suppressAimUntilPointersClear.current)
+    if (
+      event.type === 'pointerup' &&
+      event.pointerType === 'touch' &&
+      reviewCamera.zoom > 1 &&
+      !wasCameraGesture &&
+      start &&
+      Math.hypot(end.x - start.x, end.y - start.y) <= 12 * (drag?.pixelRatio ?? 1)
+    ) {
+      const now = performance.now()
+      const previousTap = lastTap.current
+      if (
+        previousTap &&
+        now - previousTap.time <= 340 &&
+        Math.hypot(end.x - previousTap.position.x, end.y - previousTap.position.y) <= 32 * (drag?.pixelRatio ?? 1)
+      ) {
+        if (previousTap.aimIndex !== undefined) props.onAimIndexChange(previousTap.aimIndex)
+        if (previousTap.speedIndex !== undefined) props.onSpeedIndexChange(previousTap.speedIndex)
+        setReviewZoom(1)
+        flashZoomIndicator()
+        lastTap.current = undefined
+      } else {
+        lastTap.current = {
+          time: now,
+          position: end,
+          aimIndex: drag?.startIndex,
+          speedIndex: drag?.startSpeedIndex,
+        }
+      }
+    } else if (!wasCameraGesture) {
+      lastTap.current = undefined
+    }
+    if (drag) aimDrag.current = undefined
     pointers.current.delete(event.pointerId)
-    if (pointers.current.size < 2) lastPinchDistance.current = undefined
+    pointerStarts.current.delete(event.pointerId)
+    if (pointers.current.size < 2) cameraGesture.current = undefined
+    if (pointers.current.size === 0) suppressAimUntilPointersClear.current = false
   }
 
   const showingPuttCloseUp = Boolean(
@@ -856,9 +996,12 @@ export function GreenCanvas(props: Props) {
       <canvas
         ref={canvasRef}
         className={`green-canvas ${props.revealed ? 'reviewing' : props.aimEnabled ? 'aiming' : ''}`}
-        aria-label={props.aimEnabled ? 'Putting green. Drag sideways to aim and forward or back to set pace.' : 'Putting green'}
+        aria-label={props.aimEnabled ? 'Putting green. Drag with one finger to aim and set pace. Use two fingers to move and zoom.' : 'Putting green. Use two fingers to move and zoom.'}
         data-solution-visible={Boolean(props.idealPath)}
-        data-camera-mode={props.revealed && reviewCamera.zoom > 1
+        data-camera-zoom={reviewCamera.zoom.toFixed(3)}
+        data-camera-center-x={reviewCamera.center.x.toFixed(3)}
+        data-camera-center-y={reviewCamera.center.y.toFixed(3)}
+        data-camera-mode={reviewCamera.zoom > 1
           ? 'review'
           : showingPuttCloseUp || usesCloseCamera(props.puzzle, props.ball, !props.revealed)
             ? 'close'
@@ -869,6 +1012,12 @@ export function GreenCanvas(props: Props) {
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
       />
+      {showTouchHint && (
+        <div className="touch-camera-hint" role="status">One finger adjusts putt <span>&middot;</span> Two fingers move and zoom</div>
+      )}
+      {showZoomIndicator && (
+        <output className="camera-zoom-indicator" aria-label="Camera zoom">{reviewCamera.zoom.toFixed(1)}&times;</output>
+      )}
       {props.revealed && (
         <div className="review-controls" aria-label="Green review controls">
           <button type="button" aria-label="Zoom out" disabled={reviewCamera.zoom <= 1} onClick={() => setReviewZoom(reviewCamera.zoom - 0.5)}>−</button>

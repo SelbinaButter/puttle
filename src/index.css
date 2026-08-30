@@ -57,6 +57,10 @@ button:disabled { cursor: default; opacity: .5; }
 .review-controls { position: absolute; z-index: 2; top: 12px; right: 12px; display: flex; padding: 4px; gap: 3px; border: 1px solid rgba(255,255,255,.18); border-radius: 11px; background: rgba(8,28,17,.78); box-shadow: 0 6px 20px rgba(0,0,0,.2); backdrop-filter: blur(8px); }
 .review-controls button { display: grid; min-width: 32px; height: 32px; padding: 0 8px; color: #e4eadc; border: 0; border-radius: 7px; place-items: center; background: transparent; font-weight: 800; }
 .review-controls .zoom-reset { min-width: 48px; color: #dce28f; font-size: .7rem; }
+.touch-camera-hint, .camera-zoom-indicator { position: absolute; z-index: 2; color: #eef4df; border: 1px solid rgba(255,255,255,.16); background: rgba(8,28,17,.82); box-shadow: 0 5px 18px rgba(0,0,0,.2); pointer-events: none; backdrop-filter: blur(8px); }
+.touch-camera-hint { bottom: 10px; left: 50%; padding: 7px 10px; border-radius: 9px; font-size: .66rem; font-weight: 700; white-space: nowrap; transform: translateX(-50%); }
+.touch-camera-hint span { padding-inline: 3px; color: #dce28f; }
+.camera-zoom-indicator { top: 12px; left: 12px; min-width: 46px; padding: 7px 9px; border-radius: 9px; color: #dce28f; font-size: .7rem; font-weight: 800; text-align: center; }
 .controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 24px; align-items: end; padding: 20px; }
 .controls label > span { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: .83rem; }
 .controls label > span b i { margin-left: 5px; color: #718779; font-size: .58rem; font-style: normal; font-weight: 650; letter-spacing: .02em; }
