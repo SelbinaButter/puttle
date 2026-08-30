@@ -5,13 +5,21 @@ import { AIM_COUNT, SPEED_COUNT, simulatePutt, type PuzzleDefinition } from '../
 
 test('an archive deep link opens the specified green', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => localStorage.setItem('puttle:onboarding:v1', 'seen'))
   const archiveDate = previousDate(localDate())
   await page.goto(`/?archive=${archiveDate}`)
 
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'View statistics' })).toHaveCount(0)
   await expect(page.locator('.archive-picker select')).toHaveValue(archiveDate)
   await expect(page.locator('footer')).toHaveText('The slope stays hidden until the round ends.')
   await expect(page).toHaveURL(new RegExp(`archive=${archiveDate}$`))
+
+  await page.getByRole('button', { name: 'Practice', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'View statistics' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'View statistics' })).toBeVisible()
 })
 
 test('archive, practice, and close-to-banner result flow work', async ({ page }) => {

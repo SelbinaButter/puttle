@@ -466,10 +466,12 @@ export default function App() {
           <span className="eyebrow">{modeLabel}{puzzle ? ` \u00b7 #${puzzle.number}` : ''}</span>
           <h1>{BRAND.displayTitle}</h1>
         </div>
-        <button className="stats-button" type="button" onClick={() => setShowStats(true)} aria-label="View statistics">
-          <span><b>{stats.currentStreak}</b> streak</span>
-          <span><b>{stats.history.length}</b> played</span>
-        </button>
+        {mode === 'daily' && (
+          <button className="stats-button" type="button" onClick={() => setShowStats(true)} aria-label="View statistics">
+            <span><b>{stats.currentStreak}</b> streak</span>
+            <span><b>{stats.history.length}</b> played</span>
+          </button>
+        )}
       </header>
 
       <div className={`mode-switcher ${mode !== 'daily' ? 'with-mode-action' : ''}`}>
